@@ -8,12 +8,13 @@ A browser workplace simulation for adults exploring a career change. Resolve the
 
 ## Shipped scope
 
-- Guest entry, no account or payment required; English UI built with React and Headless UI.
+- A focused Explore page introduces the complete Support → QA experience with one entry button. Guest entry requires no account or payment; English UI uses React and Headless UI.
+- An eight-step guide follows saved progress, opens the next task and explains each form field. Secondary tools and the wider process map are collapsed until needed.
 - Connected inbox, order inspection, refund decisions, customer replies, escalation, Kanban, documents and workday timeline.
 - Functional checkout with an intentional category-dependent defect; structured, revisable bug reports checked against recorded tests.
 - Perspective Shift preserves the incident. Fresh Replay creates a separate run and keeps past attempts.
 - Transparent deterministic rubric: correctness 40%, investigation 25%, communication/documentation 20%, prioritization 15%. Self-reported career interest stays separate.
-- Persistent career path, form drafts and exportable work record. Learning Studio connects Support and QA foundation lessons to knowledge checks, refund practice and the shipping-boundary assignment.
+- Saved attempts, form drafts and an exportable work record; previous attempts live in the final reflection. Learn presents a browsable course catalog, connecting Support and QA foundation lessons to knowledge checks, refund practice and the shipping-boundary assignment.
 - A role map explains the wider incident lifecycle and distinguishes the two playable roles from work owned by engineering, operations and the incident lead.
 - Free/Pro pricing page and a working simulated upgrade. The $29/month price is a hypothesis. Pro demo access unlocks a playable double-refund reconciliation assignment with a lesson, knowledge checks and calculated financial consequences. No payment is taken.
 
@@ -48,18 +49,19 @@ pnpm build:hosted
 
 ## Architecture
 
-| Module | Responsibility |
-| --- | --- |
-| `src/lib/shopflow/data.ts` | Versioned fictional orders, policies and separate actual/expected arithmetic |
-| `src/lib/shopflow/engine.ts` | Validated events, state transitions, downstream consequences, rubric and recommendations |
-| `src/lib/shopflow/server.ts` | Shared HTTP handler, replay validation, optional grounded AI, honest fallback |
-| `src/app/api/shopflow/route.ts` | Next.js API adapter |
-| `src/lib/shopflow/progress.ts` | Browser persistence, schema validation and stale-tab write protection |
-| `src/lib/shopflow/learning.ts` | Authored lessons, validated learning actions and practice assessments |
-| `src/components/shopflow-learning.tsx` | Learning Studio, saved checks and revisable assignments |
-| `src/components/shopflow.tsx` | Workspace, role flows, report, career path and simulated paywall |
-| `worker/index.ts` | Production Worker serving bundled Vite assets and the same `/api/shopflow` handler |
-| `scripts/build-worker.mjs` | Bundles the Worker and embeds client assets without secrets |
+| Module                                 | Responsibility                                                                           |
+| -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `src/lib/shopflow/data.ts`             | Versioned fictional orders, policies and separate actual/expected arithmetic             |
+| `src/lib/shopflow/engine.ts`           | Validated events, state transitions, downstream consequences, rubric and recommendations |
+| `src/lib/shopflow/server.ts`           | Shared HTTP handler, replay validation, optional grounded AI, honest fallback            |
+| `src/app/api/shopflow/route.ts`        | Next.js API adapter                                                                      |
+| `src/lib/shopflow/progress.ts`         | Browser persistence, schema validation and stale-tab write protection                    |
+| `src/lib/shopflow/learning.ts`         | Authored lessons, validated learning actions and practice assessments                    |
+| `src/components/shopflow-learning.tsx` | Learning Studio, saved checks and revisable assignments                                  |
+| `src/lib/shopflow/guide.ts`            | Progress-aware next steps and form guidance                                              |
+| `src/components/shopflow.tsx`          | Explore, guided workspace, role flows, reflection and simulated paywall                  |
+| `worker/index.ts`                      | Production Worker serving bundled Vite assets and the same `/api/shopflow` handler       |
+| `scripts/build-worker.mjs`             | Bundles the Worker and embeds client assets without secrets                              |
 
 The browser holds a guest event log. Every mutation is sent to the server, which validates and replays it, then computes the next state. Submitted scores and browser-calculated totals are never trusted. No database or Supabase is needed for this MVP. Support evidence is frozen at Perspective Shift so later QA reading cannot retroactively increase that score.
 
@@ -89,14 +91,14 @@ The current guard permits 12 AI requests per IP per 10 minutes **per running iso
 
 ## Demo walkthrough
 
-1. Click **Try CareerVerse**, read the incident brief and start Support.
+1. On Explore, click **Try the full experience**, read the incident brief and start Support.
 2. In Inbox, read the manager message and each complaint. Read promotion/refund policies in Documents.
 3. Inspect all three orders. Record refunds of $20, $12 and $0. Reply with the order ID, amount to two decimals, explanation and next step.
 4. On Task board, escalate SF-1042 and SF-1043 at High priority with the observed symptom.
-5. Use **Perspective Shift**. Inspect the inherited QA ticket.
+5. Follow **Continue as QA**. Inspect and acknowledge the inherited QA ticket, then read the bug-report standard.
 6. Test $100 mixed + SAVE20 (charged $100), then $100 apparel + SAVE20 (charged $80).
 7. Submit a report with a specific title, preconditions, three explicit steps mentioning SAVE20 and accessories/mixed carts, expected $80, actual $100, High severity, accessories condition and the failing test.
-8. Compare roles, enter separate interest ratings, and build the career comparison.
+8. Enter separate interest ratings and choose **Finish my workday** to view the career comparison.
 9. Choose **Learn and practice your next skill**. Complete both checks in QA foundations, then test the shipping boundary at $75 and a nearby passing control. Finish the assignment and return to Learning Studio.
 10. Open Support foundations. Pass the two checks, then resolve SF-1071: $72 paid − $60 expected − $5 already refunded = $7 additional refund. Include SF-1071 and $7.00 in a clear reply and choose to confirm the payment status. Try an incorrect amount first to compare revisions.
 11. Open the Pro course, enable the clearly simulated upgrade and pass its checks. Cancel pending RF-902, retry the failed $15 refund for SF-2082 and leave SF-2083 unchanged. The successful batch has $0 excess and $0 remaining debt.
@@ -106,11 +108,11 @@ To demonstrate meaningful failure, refund $100 on SF-1042, skip escalation, or s
 
 ## Verification and limitations
 
-Automated tests cover lesson prerequisites, wrong-to-correct practice revisions, ledger reconciliation, learning persistence and isolation, promotion boundaries/controls, correct versus incorrect decisions, illegal transitions, inherited evidence, frozen Support scores, report validation, independent replay, follow-up arithmetic, persistence conflicts and API fallback. Browser QA covered the complete Support → QA → comparison → follow-up flow, reload recovery, simulated upgrade and separate replay.
+Automated tests cover the complete guide sequence, report revisions and guidance persistence, lesson prerequisites, wrong-to-correct practice revisions, ledger reconciliation, learning persistence and isolation, promotion boundaries/controls, correct versus incorrect decisions, illegal transitions, inherited evidence, frozen Support scores, report validation, independent replay, follow-up arithmetic, persistence conflicts and API fallback. Browser QA covered the complete Support → QA → comparison → follow-up flow, reload recovery, simulated upgrade and separate replay.
 
 Guest storage is per browser and origin, limited to 12 runs, 200 events per run and 100 chat messages per run. Clearing site data loses progress. Export a work record before clearing. There are no real refunds, real customers, payments, employment guarantees or validated career-fit predictions. Additional course modules beyond the three shipped lessons are planned. Pro access is a browser-local demo gate, not a production billing entitlement; the learning API does not claim to enforce a paid subscription.
 
-The earlier Project Management prototype remains available through the legacy link. Its optional Supabase/server configuration and older tests are preserved, but it is not the ShopFlow core demo. Legacy scripts such as `scripts/smoke-test.py` exercise the older PM API only.
+The earlier Project Management prototype remains in the repository; Explore no longer links to it. Its optional Supabase/server configuration and older tests are preserved, but it is not the ShopFlow core demo. Legacy scripts such as `scripts/smoke-test.py` exercise the older PM API only.
 
 ## Hackathon thesis
 

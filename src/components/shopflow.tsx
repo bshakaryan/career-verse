@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 import CareerVerse from "./careerverse";
 import ShopFlowLearning from "./shopflow-learning";
-import { lessonPassed } from "@/lib/shopflow/learning";
+import { nextGuide, type Guide } from "@/lib/shopflow/guide";
 import {
   orders,
   documents,
@@ -72,7 +72,7 @@ import {
   type ChatMessage,
 } from "@/lib/shopflow/progress";
 
-type Screen = "home" | "workspace" | "path" | "learn" | "pricing" | "pm";
+type Screen = "home" | "workspace" | "learn" | "pricing" | "pm";
 type App =
   | "inbox"
   | "tasks"
@@ -174,12 +174,14 @@ export default function ShopFlow() {
   const [selectedOrder, setSelectedOrder] = useState(orders[0].id);
   const [selectedDoc, setSelectedDoc] = useState("promotion");
   const [aiReady, setAiReady] = useState(false);
-  const [careerSearch, setCareerSearch] = useState("");
   const [followup, setFollowup] = useState(false);
   const run = progress.runs.find((r) => r.id === progress.active);
   const state = run ? replay(run) : null;
   const draft = progress.drafts[progress.active || ""] || {};
   const chats = progress.chats[progress.active || ""] || [];
+  const guide = state
+    ? nextGuide(state, draft["qa-ticket-reviewed"] === "yes")
+    : null;
   function navigate(next: Screen) {
     setDialog(null);
     setToast("");
@@ -193,11 +195,11 @@ export default function ShopFlow() {
       setScreen(
         ["practice", "careers"].includes(hash)
           ? "pm"
-          : ["home", "workspace", "path", "learn", "pricing", "pm"].includes(
-                hash,
-              )
-            ? (hash as Screen)
-            : "home",
+          : hash === "path"
+            ? "workspace"
+            : ["home", "workspace", "learn", "pricing", "pm"].includes(hash)
+              ? (hash as Screen)
+              : "home",
       );
       setDialog(null);
     };
@@ -273,6 +275,8 @@ export default function ShopFlow() {
         runs: p.runs.map((r) => (r.id === run.id ? data.run : r)),
       }));
       setToast(data.state.history.at(-1)?.text || "Saved.");
+      if (screen === "workspace")
+        window.scrollTo({ top: 0, behavior: "smooth" });
       return true;
     } catch (e) {
       setError((e as Error).message);
@@ -312,6 +316,97 @@ export default function ShopFlow() {
       setDraft("workspaceApp", next);
     setToast("");
     window.scrollTo({ top: 0 });
+  }
+  async function openGuidedStep(step: Guide) {
+    let focus = "";
+    switch (step.target) {
+      case "message":
+        setSelectedMessage(step.id!);
+        goApp("inbox");
+        await act({ type: "READ_MESSAGE", id: step.id! });
+        break;
+      case "document":
+        setSelectedDoc(step.id!);
+        goApp("docs");
+        await act({ type: "READ_DOCUMENT", id: step.id! });
+        break;
+      case "order":
+        setSelectedOrder(step.id!);
+        goApp("orders");
+        await act({ type: "ORDER_INSPECTED", id: step.id! });
+        focus = "sf-order-details";
+        break;
+      case "refund":
+        setSelectedOrder(step.id!);
+        goApp("orders");
+        focus = `refund-${step.id}`;
+        break;
+      case "reply":
+        setSelectedMessage(step.id!);
+        goApp("inbox");
+        focus = `reply-${step.id}`;
+        break;
+      case "escalation":
+        goApp("tasks");
+        focus = "sf-escalation";
+        break;
+      case "ticket":
+        goApp("tasks");
+        focus = "sf-qa-ticket";
+        break;
+      case "test":
+        setFollowup(false);
+        goApp("sandbox");
+        focus = "test-subtotal";
+        break;
+      case "report":
+        setFollowup(false);
+        goApp("sandbox");
+        focus = "sf-bug-report";
+        break;
+      case "shift":
+        setDialog("shift");
+        break;
+      case "reflection":
+        goApp("report");
+        break;
+      case "learn":
+        navigate("learn");
+        break;
+    }
+    if (focus)
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          const field = document.getElementById(focus);
+          field?.scrollIntoView({ behavior: "smooth", block: "center" });
+          field?.focus({ preventScroll: true });
+        }),
+      );
+  }
+  function fieldHelp(key: string) {
+    if (key.startsWith("refund-"))
+      return "Enter the overcharge only, in dollars: paid − expected. Use 0.00 if the correct discount was applied. Do not enter a $ sign.";
+    if (key.startsWith("reply-")) {
+      const id = key.slice(6);
+      return `Include ${id}, your recorded refund ${state?.refunds[id] === undefined ? "amount" : money(state.refunds[id])}, a short explanation and the next step. Write at least a few clear sentences; do not promise a fix yet.`;
+    }
+    if (key.endsWith("subtotal"))
+      return "Enter the merchandise value before discounts, such as 100.00. The result appears after you run the test.";
+    if (key.endsWith("promo"))
+      return "Enter SAVE20 to test the promotion. Leave blank when testing a checkout without a discount code.";
+    if (key.endsWith("title"))
+      return "Name what fails and the condition that triggers it. Use a specific description rather than just “bug”.";
+    if (key.endsWith("preconditions"))
+      return "Describe the starting cart: merchandise value, category and any promo code. Another tester should be able to set up the same state.";
+    if (key.endsWith("steps"))
+      return "Write at least three numbered lines: set up the cart → apply the code (or choose shipping) → observe the charge. Include the exact input values.";
+    if (key.endsWith("expected"))
+      return "Calculate what the policy says the selected test should charge. Enter dollars with up to two decimals.";
+    if (key.endsWith("actual"))
+      return "Copy the charged total from the test you select as evidence, not the merchandise subtotal.";
+    if (key === "symptom")
+      return "State which orders share a problem and how their charges differ from the promotion. Explain the observed pattern without guessing at the code.";
+    return "";
   }
   async function chat(mode: "chat" | "reflection" = "chat") {
     if (!run || busyRef.current) return;
@@ -420,18 +515,29 @@ export default function ShopFlow() {
       {label}
       <input
         type={type}
+        id={key}
+        aria-label={label}
+        aria-describedby={fieldHelp(key) ? `${key}-help` : undefined}
         value={draft[key] || ""}
         placeholder={placeholder}
         maxLength={type === "text" ? 200 : undefined}
         onChange={(e) => setDraft(key, e.target.value)}
         disabled={busy}
       />
+      {fieldHelp(key) && (
+        <small id={`${key}-help`} className="sf-field-help">
+          {fieldHelp(key)}
+        </small>
+      )}
     </label>
   );
   const textarea = (key: string, label: string, placeholder = "", rows = 4) => (
     <label className="sf-field">
       {label}
       <textarea
+        id={key}
+        aria-label={label}
+        aria-describedby={fieldHelp(key) ? `${key}-help` : undefined}
         value={draft[key] || ""}
         placeholder={placeholder}
         rows={rows}
@@ -439,6 +545,11 @@ export default function ShopFlow() {
         onChange={(e) => setDraft(key, e.target.value)}
         disabled={busy}
       />
+      {fieldHelp(key) && (
+        <small id={`${key}-help`} className="sf-field-help">
+          {fieldHelp(key)}
+        </small>
+      )}
     </label>
   );
   async function sendRefund() {
@@ -480,7 +591,7 @@ export default function ShopFlow() {
     const tests = practice ? state.followupTests : state.tests;
     const result = (practice ? state.followupReports : state.reports).at(-1);
     return (
-      <section className="sf-panel">
+      <section className="sf-panel" id="sf-bug-report" tabIndex={-1}>
         <div className="sf-panel-heading">
           <div>
             <span className="sf-kicker">DELIVERABLE</span>
@@ -577,7 +688,7 @@ export default function ShopFlow() {
             />
             {!practice && (
               <Button onClick={() => goApp("report")}>
-                Compare my roles <ArrowRight size={16} />
+                Review my experience <ArrowRight size={16} />
               </Button>
             )}
             {practice && (
@@ -751,11 +862,24 @@ export default function ShopFlow() {
                   navigate("learn");
                 }}
               >
-                Back to QA lesson
+                Back to courses
               </Button>
             </section>
           )}
-          {reportForm(practice)}
+          {practice ||
+          state.reports.length > 0 ||
+          (state.tests.some((test) => test.actual !== test.expected) &&
+            state.tests.some((test) => test.actual === test.expected)) ? (
+            reportForm(practice)
+          ) : (
+            <section className="sf-panel">
+              <h3>Next: your engineering handoff</h3>
+              <p>
+                Run a failing test and a passing control to open your bug
+                report. You’ll use those results as evidence.
+              </p>
+            </section>
+          )}
         </div>
       </div>
     );
@@ -992,7 +1116,7 @@ export default function ShopFlow() {
               </table>
             </div>
           </section>
-          <section className="sf-panel">
+          <section className="sf-panel" id="sf-order-details" tabIndex={-1}>
             <div className="sf-panel-heading">
               <h2>
                 {o.id} · {o.customer}
@@ -1139,7 +1263,8 @@ export default function ShopFlow() {
       ];
       return (
         <>
-          <section className="sf-panel">
+          <details className="sf-panel sf-process-details">
+            <summary>How the wider team handles this incident</summary>
             <span className="sf-kicker">
               ONE INCIDENT / SHARED RESPONSIBILITIES
             </span>
@@ -1208,7 +1333,7 @@ export default function ShopFlow() {
                 <Badge>After recovery is verified</Badge>
               </li>
             </ol>
-          </section>
+          </details>
           <div className="sf-kanban">
             {["Todo", "In Progress", "Blocked", "Done"].map((status) => (
               <section key={status}>
@@ -1253,7 +1378,7 @@ export default function ShopFlow() {
             ))}
           </div>
           {!supportLocked && !state.escalation && (
-            <section className="sf-panel">
+            <section className="sf-panel" id="sf-escalation" tabIndex={-1}>
               <div className="sf-panel-heading">
                 <div>
                   <span className="sf-kicker">HANDOFF TO QA</span>
@@ -1321,8 +1446,8 @@ export default function ShopFlow() {
               </fieldset>
             </section>
           )}
-          {state.qaTicket && (
-            <section className="sf-panel">
+          {state.qaTicket && state.stage !== "support" && (
+            <section className="sf-panel" id="sf-qa-ticket" tabIndex={-1}>
               <h3>QA-201 · inherited evidence</h3>
               <p>{state.qaTicket.body}</p>
               <p className="sf-muted">
@@ -1336,8 +1461,20 @@ export default function ShopFlow() {
                   {state.impact.qaDelay}-minute delay.
                 </div>
               )}
-              <Button onClick={() => goApp("sandbox")}>
-                Open checkout sandbox <FlaskConical size={16} />
+              <Button
+                disabled={busy}
+                onClick={() => {
+                  setDraft("qa-ticket-reviewed", "yes");
+                  if (!state.docs.includes("bugs")) {
+                    setSelectedDoc("bugs");
+                    goApp("docs");
+                  } else goApp("sandbox");
+                }}
+              >
+                {draft["qa-ticket-reviewed"] === "yes"
+                  ? "Continue the investigation"
+                  : "I’ve reviewed the ticket"}
+                <ArrowRight size={16} />
               </Button>
             </section>
           )}
@@ -1493,6 +1630,7 @@ export default function ShopFlow() {
                 <label className="sf-field" key={role}>
                   Interest in {role === "support" ? "Customer Support" : "QA"}
                   <select
+                    aria-label={`Interest in ${role === "support" ? "Customer Support" : "QA"}`}
                     value={draft[`interest-${role}`] || ""}
                     onChange={(e) =>
                       setDraft(`interest-${role}`, e.target.value)
@@ -1551,7 +1689,7 @@ export default function ShopFlow() {
                 }
               }}
             >
-              Build my career comparison <ArrowRight size={16} />
+              Finish my workday <ArrowRight size={16} />
             </Button>
           </fieldset>
           {!state.reports.length && (
@@ -1691,6 +1829,38 @@ export default function ShopFlow() {
             </Button>
           </div>
         </section>
+        {progress.runs.length > 1 && (
+          <details className="sf-panel sf-attempt-history">
+            <summary>Previous attempts ({progress.runs.length})</summary>
+            {progress.runs.map((saved, index) => (
+              <button
+                className="sf-text-button"
+                key={saved.id}
+                disabled={busy || saved.id === run?.id}
+                onClick={() => {
+                  try {
+                    commit((p) => ({ ...p, active: saved.id }));
+                    const stage = replay(saved).stage;
+                    setApp(
+                      stage === "complete"
+                        ? "report"
+                        : stage === "qa"
+                          ? "tasks"
+                          : "inbox",
+                    );
+                    navigate("workspace");
+                  } catch (e) {
+                    setError((e as Error).message);
+                  }
+                }}
+              >
+                Attempt {index + 1} ·{" "}
+                {replay(saved).stage === "complete" ? "Review" : "Continue"}
+                {saved.id === run?.id ? " · current" : ""}
+              </button>
+            ))}
+          </details>
+        )}
         <section className="sf-pro-strip">
           <div>
             <Badge>CAREERVERSE PRO · DEMO</Badge>
@@ -1745,23 +1915,19 @@ export default function ShopFlow() {
           >
             Explore
           </button>
-          <button
-            aria-current={screen === "path" ? "page" : undefined}
-            onClick={() => navigate("path")}
-          >
-            My career path
-          </button>
+          {run && (
+            <button
+              aria-current={screen === "workspace" ? "page" : undefined}
+              onClick={() => navigate("workspace")}
+            >
+              My experience
+            </button>
+          )}
           <button
             aria-current={screen === "learn" ? "page" : undefined}
             onClick={() => navigate("learn")}
           >
             Learn
-          </button>
-          <button
-            aria-current={screen === "pricing" ? "page" : undefined}
-            onClick={() => navigate("pricing")}
-          >
-            Plans
           </button>
         </nav>
         <div className="sf-guest">
@@ -1779,197 +1945,64 @@ export default function ShopFlow() {
         </div>
       )}
       {screen === "home" && (
-        <main className="sf-home">
-          <section className="sf-home-hero">
-            <div>
-              <span className="sf-kicker">
-                LESS GUESSING. MORE FIRSTHAND EXPERIENCE.
-              </span>
-              <h1>
-                One crisis.
-                <br />
-                Two careers.
-                <br />
-                <em>Your next move.</em>
-              </h1>
-              <p>
-                Before you commit to a new career, try the work. Step into a
-                company, make real decisions in a simulated incident, and see it
-                through someone else’s eyes.
-              </p>
-              <div className="sf-actions">
-                <Button
-                  onClick={() =>
-                    run ? navigate("workspace") : setDialog("intro")
-                  }
-                >
-                  {run ? "Continue your practice" : "Try CareerVerse"}
-                  <ArrowRight size={18} />
-                </Button>
-                <span className="sf-small">
-                  Free · no sign-up
-                  <br />
-                  About 20–30 minutes
-                </span>
-              </div>
-            </div>
-            <div className="sf-incident-preview">
-              <div className="sf-preview-top">
-                <span>
-                  <span className="sf-shop-mark">S</span>ShopFlow Inc.
-                </span>
-                <Badge tone="amber">Incident in progress</Badge>
-              </div>
-              <div className="sf-preview-message">
-                <span className="sf-avatar">AM</span>
-                <div>
-                  <b>Avery · Support Lead</b>
-                  <p>
-                    “Customers are reporting unexpected charges. Can you find
-                    out what’s happening?”
-                  </p>
-                </div>
-              </div>
-              <div className="sf-preview-order">
-                <span>ORDER SF-1042</span>
-                <strong>$100.00</strong>
-                <small>Charged with SAVE20 applied</small>
-                <div>
-                  <span>Customer complaint</span>
-                  <Badge tone="amber">Needs investigation</Badge>
-                </div>
-              </div>
-              <div className="sf-perspective-visual">
-                <span>
-                  <Headphones size={19} />
-                  Support
-                </span>
-                <ArrowRight size={22} />
-                <span>
-                  <FlaskConical size={19} />
-                  QA Tester
-                </span>
-              </div>
-              <p className="sf-preview-caption">
-                Your decisions in one role become the next role’s reality.
-              </p>
-            </div>
-          </section>
-          <section className="sf-careers-section">
-            <div className="sf-section-title">
-              <div>
-                <span className="sf-kicker">CHOOSE A PERSPECTIVE</span>
-                <h2>Different work. One connected story.</h2>
-              </div>
-              <label className="sf-career-search">
-                <Search size={17} />
-                <input
-                  aria-label="Search available careers"
-                  placeholder="Find a career…"
-                  value={careerSearch}
-                  onChange={(e) => setCareerSearch(e.target.value)}
-                />
-              </label>
-            </div>
-            <div className="sf-career-grid">
-              {[
-                {
-                  name: "Customer Support Specialist",
-                  role: "support",
-                  icon: Headphones,
-                  tag: "START HERE",
-                  text: "Make sense of customer complaints. Investigate charges, decide refunds, and explain what happens next.",
-                  skills: ["Empathy", "Communication", "Judgment"],
-                },
-                {
-                  name: "Junior QA Tester",
-                  role: "qa",
-                  icon: FlaskConical,
-                  tag: "PERSPECTIVE TWO",
-                  text: "Follow the evidence. Test a working checkout, isolate a defect, and write a report another teammate can reproduce.",
-                  skills: ["Investigation", "Precision", "Documentation"],
-                },
-              ]
-                .filter((c) =>
-                  `${c.name} ${c.skills.join(" ")}`
-                    .toLowerCase()
-                    .includes(careerSearch.toLowerCase()),
-                )
-                .map((c) => (
-                  <article className={`sf-career-card ${c.role}`} key={c.role}>
-                    <div>
-                      <span className="sf-career-icon">
-                        <c.icon size={27} />
-                      </span>
-                      <Badge>{c.tag}</Badge>
-                    </div>
-                    <h3>{c.name}</h3>
-                    <p>{c.text}</p>
-                    <div className="sf-skill-tags">
-                      {c.skills.map((s) => (
-                        <span key={s}>{s}</span>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => {
-                        if (run) {
-                          navigate("workspace");
-                          if (c.role === "qa") setApp("tasks");
-                        } else setDialog("intro");
-                      }}
-                    >
-                      {c.role === "support"
-                        ? "Start with the customer"
-                        : "Discover the connected QA role"}
-                      <ArrowRight size={17} />
-                    </button>
-                  </article>
-                ))}
-            </div>
-            {careerSearch &&
-              ![
-                "customer support specialist empathy communication judgment",
-                "junior qa tester investigation precision documentation",
-              ].some((keywords) =>
-                keywords.includes(careerSearch.toLowerCase()),
-              ) && (
-                <p className="sf-muted">
-                  No careers match this search. Try “Support” or “QA”. More
-                  careers are planned.
-                </p>
-              )}
-          </section>
-          <section className="sf-how">
-            <div>
+        <main className="sf-explore">
+          <span className="sf-kicker">
+            TRY A PROFESSION BEFORE YOU CHOOSE IT
+          </span>
+          <h1>
+            One workday.
+            <br />
+            <em>Two perspectives.</em>
+          </h1>
+          <p className="sf-explore-intro">
+            A shop’s checkout is charging customers incorrectly. Step into the
+            team, help the customers and investigate what went wrong.
+          </p>
+          <Button
+            disabled={busy}
+            onClick={() =>
+              run && state?.stage !== "complete"
+                ? navigate("workspace")
+                : setDialog(run ? "replay" : "intro")
+            }
+          >
+            {run && state?.stage !== "complete"
+              ? "Continue my experience"
+              : "Try the full experience"}
+            <ArrowRight size={18} />
+          </Button>
+          <p className="sf-small">
+            20–30 minutes · Free · No account needed
+            <br />A step-by-step guide stays with you throughout.
+          </p>
+          <ol className="sf-explore-flow">
+            <li>
               <span>01</span>
-              <h3>Step into a real kind of problem</h3>
-              <p>
-                Messages, orders, policies and a deadline. Everything you need
-                to get started.
-              </p>
-            </div>
-            <div>
+              <div>
+                <h2>Start in Customer Support</h2>
+                <p>Read a complaint, check the order and decide how to help.</p>
+              </div>
+            </li>
+            <li>
               <span>02</span>
-              <h3>Change seats, keep the consequences</h3>
-              <p>
-                Your QA self inherits the handoff your Support self created.
-              </p>
-            </div>
-            <div>
+              <div>
+                <h2>Continue as a QA Tester</h2>
+                <p>
+                  Follow your handoff, test the checkout and report the defect.
+                </p>
+              </div>
+            </li>
+            <li>
               <span>03</span>
-              <h3>Learn a skill. Try a new assignment.</h3>
-              <p>
-                Choose a foundation lesson, check your understanding and apply
-                it to a different case.
-              </p>
-            </div>
-          </section>
-          <footer className="sf-home-footer">
-            <span>Fictional company. Practical decisions.</span>
-            <button onClick={() => navigate("pm")}>
-              Earlier PM practice <ArrowUpRight size={13} />
-            </button>
-          </footer>
+              <div>
+                <h2>Reflect on the experience</h2>
+                <p>
+                  See the consequences of your decisions and discover what you
+                  want to learn.
+                </p>
+              </div>
+            </li>
+          </ol>
         </main>
       )}
       {screen === "workspace" && state && (
@@ -1999,17 +2032,50 @@ export default function ShopFlow() {
               </small>
             </div>
             <nav aria-label="Workplace applications">
-              {apps.map((a) => (
-                <button
-                  key={a.id}
-                  aria-current={app === a.id ? "page" : undefined}
-                  onClick={() => goApp(a.id)}
-                >
-                  <a.icon size={18} />
-                  <span>{a.label}</span>
-                  {a.id === "inbox" && <small>{4 - state.read.length}</small>}
-                </button>
-              ))}
+              {apps
+                .filter((a) =>
+                  (state.stage === "support"
+                    ? ["inbox", "orders", "docs", "tasks"]
+                    : state.stage === "qa"
+                      ? ["tasks", "sandbox", "docs", "report"]
+                      : ["report", "sandbox"]
+                  ).includes(a.id),
+                )
+                .map((a) => (
+                  <button
+                    key={a.id}
+                    aria-current={app === a.id ? "page" : undefined}
+                    onClick={() => goApp(a.id)}
+                  >
+                    <a.icon size={18} />
+                    <span>{a.label}</span>
+                    {a.id === "inbox" && <small>{4 - state.read.length}</small>}
+                  </button>
+                ))}
+              <details className="sf-other-tools">
+                <summary>Other tools</summary>
+                {apps
+                  .filter(
+                    (a) =>
+                      !(
+                        state.stage === "support"
+                          ? ["inbox", "orders", "docs", "tasks"]
+                          : state.stage === "qa"
+                            ? ["tasks", "sandbox", "docs", "report"]
+                            : ["report", "sandbox"]
+                      ).includes(a.id),
+                  )
+                  .map((a) => (
+                    <button
+                      key={a.id}
+                      aria-current={app === a.id ? "page" : undefined}
+                      onClick={() => goApp(a.id)}
+                    >
+                      <a.icon size={18} />
+                      <span>{a.label}</span>
+                    </button>
+                  ))}
+              </details>
             </nav>
             <div className="sf-sidebar-bottom">
               <span className="sf-small">Connected run</span>
@@ -2019,7 +2085,11 @@ export default function ShopFlow() {
                 Different perspective.
               </p>
               <Button
-                disabled={busy}
+                disabled={
+                  busy ||
+                  (state.stage === "support" &&
+                    Object.keys(state.replies).length < 3)
+                }
                 onClick={() =>
                   state.stage === "support"
                     ? setDialog("shift")
@@ -2028,7 +2098,7 @@ export default function ShopFlow() {
               >
                 {state.stage === "support"
                   ? "Perspective Shift"
-                  : "Compare my roles"}
+                  : "Review my experience"}
                 <ArrowRight size={15} />
               </Button>
             </div>
@@ -2081,7 +2151,55 @@ export default function ShopFlow() {
                 {toast}
               </div>
             )}
-            <div className="sf-work-content">{workspaceContent()}</div>
+            <div className="sf-work-content">
+              {guide && !(state.stage === "complete" && app === "sandbox") && (
+                <section className="sf-guide" aria-label="Step-by-step guide">
+                  <div className="sf-guide-heading">
+                    <span className="sf-avatar">AM</span>
+                    <div>
+                      <span className="sf-kicker">
+                        AVERY’S GUIDE ·{" "}
+                        {state.stage === "complete"
+                          ? "EXPERIENCE COMPLETE"
+                          : `STEP ${guide.step} OF 8`}
+                      </span>
+                      <h2>{guide.title}</h2>
+                    </div>
+                    <span className="sf-badge purple">
+                      {state.stage === "support"
+                        ? "Support"
+                        : state.stage === "qa"
+                          ? "QA Tester"
+                          : "Review"}
+                    </span>
+                  </div>
+                  <progress
+                    aria-label="Experience progress"
+                    max={8}
+                    value={state.stage === "complete" ? 8 : guide.step - 1}
+                  />
+                  <p>{guide.text}</p>
+                  <div className="sf-guide-actions">
+                    <Button
+                      disabled={busy}
+                      onClick={() => openGuidedStep(guide)}
+                    >
+                      {guide.button}
+                      <ArrowRight size={16} />
+                    </Button>
+                    <details key={guide.title}>
+                      <summary>Show me how</summary>
+                      <ul>
+                        {guide.tips.map((tip) => (
+                          <li key={tip}>{tip}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  </div>
+                </section>
+              )}
+              {workspaceContent()}
+            </div>
             <footer className="sf-work-footer">
               <span>
                 <i />
@@ -2103,6 +2221,7 @@ export default function ShopFlow() {
       )}
       {screen === "learn" && (
         <ShopFlowLearning
+          key={progress.active || "guest"}
           state={state}
           busy={busy}
           pro={progress.demoPro}
@@ -2121,156 +2240,6 @@ export default function ShopFlow() {
             navigate("workspace");
           }}
         />
-      )}
-      {screen === "path" && (
-        <main className="sf-page">
-          <span className="sf-kicker">MY CAREER PATH</span>
-          <h1>Every attempt teaches you something.</h1>
-          <p className="sf-page-intro">
-            Your runs stay separate. Come back to unfinished work, compare your
-            decisions, or start again from clean conditions.
-          </p>
-          {!progress.runs.length ? (
-            <section className="sf-panel">
-              <h2>Begin with two perspectives.</h2>
-              <p>
-                Complete the Checkout Crisis to discover what you want to
-                practice next.
-              </p>
-              <Button onClick={() => setDialog("intro")}>
-                Try CareerVerse <ArrowRight size={16} />
-              </Button>
-            </section>
-          ) : (
-            <>
-              <div className="sf-path-grid">
-                {progress.runs.map((r, i) => {
-                  const s = replay(r);
-                  return (
-                    <article className="sf-panel" key={r.id}>
-                      <div className="sf-panel-heading">
-                        <Badge
-                          tone={s.stage === "complete" ? "green" : "amber"}
-                        >
-                          {s.stage === "complete" ? "Completed" : "In progress"}
-                        </Badge>
-                        <small>Attempt {i + 1}</small>
-                      </div>
-                      <h2>The Checkout Crisis</h2>
-                      <p className="sf-muted">
-                        {new Date(r.createdAt).toLocaleDateString("en-US")} ·{" "}
-                        {r.events.length} recorded actions
-                      </p>
-                      <div className="sf-run-stats">
-                        <span>
-                          Support{" "}
-                          <b>
-                            {s.stage !== "support"
-                              ? `${assessSupport(s).total}/100`
-                              : "In progress"}
-                          </b>
-                        </span>
-                        <span>
-                          QA{" "}
-                          <b>
-                            {s.reports.at(-1)?.score.total ?? "Not yet"}
-                            {s.reports.length ? "/100" : ""}
-                          </b>
-                        </span>
-                      </div>
-                      {s.interest && (
-                        <p className="sf-muted">
-                          Interest: Support {s.interest.support}/5 · QA{" "}
-                          {s.interest.qa}/5
-                        </p>
-                      )}
-                      <Button
-                        secondary
-                        onClick={() => {
-                          try {
-                            commit((p) => ({ ...p, active: r.id }));
-                            setApp(
-                              s.stage === "complete"
-                                ? "report"
-                                : s.stage === "qa"
-                                  ? "tasks"
-                                  : "inbox",
-                            );
-                            setFollowup(false);
-                            navigate("workspace");
-                          } catch (e) {
-                            setError((e as Error).message);
-                          }
-                        }}
-                      >
-                        {s.stage === "complete"
-                          ? "View comparison"
-                          : "Continue your practice"}
-                        <ArrowRight size={16} />
-                      </Button>
-                      {s.stage === "complete" && (
-                        <Button
-                          onClick={() => {
-                            try {
-                              commit((p) => ({ ...p, active: r.id }));
-                              navigate("learn");
-                            } catch (e) {
-                              setError((e as Error).message);
-                            }
-                          }}
-                        >
-                          Continue learning <BookOpen size={16} />
-                        </Button>
-                      )}
-                    </article>
-                  );
-                })}
-              </div>
-              {state?.stage === "complete" && (
-                <section className="sf-followup-card">
-                  <span className="sf-career-icon">
-                    <BookOpen size={28} />
-                  </span>
-                  <div>
-                    <Badge tone="purple">LEARN → PRACTICE</Badge>
-                    <h2>Your next skill starts here.</h2>
-                    <p>
-                      Support lessons{" "}
-                      {lessonPassed(state.learning, "support") ? "✓" : "0/1"} ·
-                      QA lessons{" "}
-                      {lessonPassed(state.learning, "qa") ? "✓" : "0/1"}
-                    </p>
-                    <p>
-                      New refund decisions, boundary tests and feedback on every
-                      attempt.
-                    </p>
-                  </div>
-                  <Button onClick={() => navigate("learn")}>
-                    Continue learning <ArrowRight size={16} />
-                  </Button>
-                </section>
-              )}
-              <Button secondary onClick={() => setDialog("replay")}>
-                <Plus size={16} />
-                Fresh replay
-              </Button>
-            </>
-          )}
-          <section className="sf-pro-strip">
-            <div>
-              <Badge>PRO SCENARIO · DEMO</Badge>
-              <h3>The double-refund incident</h3>
-              <p>
-                A playable payment ledger: cancel duplicates, retry failed
-                refunds and protect customer balances.
-              </p>
-            </div>
-            <Button secondary onClick={() => setDialog("upgrade")}>
-              {progress.demoPro ? "View demo access" : "Unlock with Pro"}
-              <ArrowRight size={16} />
-            </Button>
-          </section>
-        </main>
       )}
       {screen === "pricing" && (
         <main className="sf-page sf-pricing">
@@ -2399,7 +2368,7 @@ export default function ShopFlow() {
                   <div>
                     <TrendingUp size={23} />
                     <span>
-                      <b>3. Your career comparison</b>
+                      <b>3. Your workday review</b>
                       <small>
                         See your evidence, share your interests and practice
                         again.
@@ -2484,9 +2453,9 @@ export default function ShopFlow() {
                 <Badge>FRESH REPLAY</Badge>
                 <DialogTitle>A clean start. A separate result.</DialogTitle>
                 <Description>
-                  Your current run stays in My Career Path. The new run begins
-                  with the original orders, no refunds, no escalation and a
-                  fresh clock.
+                  Your current run stays saved in your previous attempts. The
+                  new run begins with the original orders, no refunds, no
+                  escalation and a fresh clock.
                 </Description>
                 <Button disabled={busy} onClick={begin}>
                   Start independent replay <RotateCcw size={16} />
@@ -2531,7 +2500,7 @@ export default function ShopFlow() {
                         navigate("learn");
                       }}
                     >
-                      Open advanced practice <ArrowRight size={16} />
+                      Open courses <ArrowRight size={16} />
                     </Button>
                     <Button
                       secondary
@@ -2564,7 +2533,7 @@ export default function ShopFlow() {
                   className="sf-text-button"
                   onClick={() => {
                     setDialog(null);
-                    navigate("path");
+                    navigate("learn");
                   }}
                 >
                   Back to free practice

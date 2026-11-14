@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { ArrowRight, BookOpen, CheckCircle2, LockKeyhole } from "lucide-react";
 import {
   courses,
@@ -75,15 +76,17 @@ export default function ShopFlowLearning({
   onReport,
 }: Props) {
   const available = state?.stage === "complete";
+  const [openedCourse, setOpenedCourse] = useState<Course | null>(null);
+  function selectCourse(id: Course) {
+    setOpenedCourse(id);
+    if (available) setDraft("learn-course", id);
+    window.scrollTo({ top: 0 });
+  }
   const recommended: Course =
     (state?.interest?.support || 0) > (state?.interest?.qa || 0)
       ? "support"
       : "qa";
-  const course: Course = ["support", "qa", "advanced"].includes(
-    draft["learn-course"],
-  )
-    ? (draft["learn-course"] as Course)
-    : recommended;
+  const course: Course = openedCourse || recommended;
   const content = courses[course];
   const passed = !!state && lessonPassed(state.learning, course);
   const locked = course === "advanced" && !pro;
@@ -106,60 +109,115 @@ export default function ShopFlowLearning({
       </select>
     </label>
   );
+  if (!openedCourse)
+    return (
+      <main className="sf-page sf-learning sf-course-catalog">
+        <span className="sf-kicker">LEARN</span>
+        <h1>Learn the skills behind the work.</h1>
+        <p className="sf-page-intro">
+          Short courses for the roles in your ShopFlow experience. Read the
+          lessons, check your understanding and apply it to a new assignment.
+        </p>
+        <div className="sf-course-grid">
+          {(Object.keys(courses) as Course[]).map((id) => (
+            <article className="sf-panel sf-course-card" key={id}>
+              <span
+                className={`sf-badge ${id === "advanced" ? "purple" : "green"}`}
+              >
+                {id === "advanced" ? "PRO · DEMO ACCESS" : "FREE COURSE"}
+              </span>
+              <BookOpen size={28} />
+              <h2>{courses[id].title}</h2>
+              <p>{courses[id].subtitle}</p>
+              <ul>
+                {courses[id].sections.map((section) => (
+                  <li key={section.title}>{section.title}</li>
+                ))}
+              </ul>
+              <small>
+                {courses[id].duration} · {courses[id].sections.length} lessons ·
+                Practice included
+              </small>
+              {available && lessonPassed(state!.learning, id) && (
+                <p className="sf-muted">Your lesson checks are complete.</p>
+              )}
+              <button
+                className="sf-button secondary"
+                onClick={() => selectCourse(id)}
+              >
+                {available ? "Open course" : "Preview course"}
+                <ArrowRight size={16} />
+              </button>
+            </article>
+          ))}
+        </div>
+        {!available && (
+          <p className="sf-muted">
+            You can preview every course now. Complete the guided workday to
+            unlock the practical assignments and save your learning progress.
+          </p>
+        )}
+      </main>
+    );
   return (
     <main className="sf-page sf-learning">
-      <span className="sf-kicker">CAREERVERSE LEARNING STUDIO</span>
-      <h1>Try it. Learn it. Do it again.</h1>
+      <button
+        className="sf-text-button"
+        onClick={() => {
+          setOpenedCourse(null);
+          window.scrollTo({ top: 0 });
+        }}
+      >
+        ← All courses
+      </button>
+      <span className="sf-kicker">
+        {course === "advanced"
+          ? "PAYMENT OPERATIONS"
+          : course === "qa"
+            ? "QA TESTING"
+            : "CUSTOMER SUPPORT"}
+      </span>
+      <h1>{content.title}</h1>
       <p className="sf-page-intro">
-        Build on your first shift with a short lesson, a knowledge check and a
-        new work assignment. Your lessons and attempts are saved with this run.
+        {content.subtitle} {content.duration} · Lessons, checks and a practical
+        assignment.
       </p>
       {!available ? (
-        <section className="sf-panel">
-          <BookOpen size={28} />
-          <h2>Start with the work itself.</h2>
-          <p>
-            Try Support and QA in the Checkout Crisis, then record your
-            interests. Both foundation lessons and their practice assignments
-            are included free.
-          </p>
-          <button className="sf-button" onClick={onStart}>
-            {state ? "Continue the incident" : "Try the professions"}
-            <ArrowRight size={16} />
-          </button>
-        </section>
+        <>
+          <section className="sf-panel">
+            <span className="sf-kicker">COURSE PREVIEW</span>
+            {content.sections.map((section) => (
+              <article className="sf-lesson-section" key={section.title}>
+                <div>
+                  <h2>{section.title}</h2>
+                  <p>{section.text}</p>
+                </div>
+              </article>
+            ))}
+          </section>
+          <section className="sf-panel">
+            <h2>Try the work, then put this into practice.</h2>
+            <p>
+              Complete the guided ShopFlow experience to save your lesson checks
+              and take on the{" "}
+              {course === "qa"
+                ? "shipping-boundary"
+                : course === "support"
+                  ? "refund"
+                  : "payment-reconciliation"}{" "}
+              assignment.{" "}
+              {course === "advanced"
+                ? "This assignment uses simulated Pro access; no payment is collected."
+                : "This course and assignment are free."}
+            </p>
+            <button className="sf-button" onClick={onStart}>
+              {state ? "Continue my experience" : "Try the full experience"}
+              <ArrowRight size={16} />
+            </button>
+          </section>
+        </>
       ) : (
         <>
-          <div
-            className="sf-learning-tabs"
-            role="group"
-            aria-label="Choose a course"
-          >
-            {(Object.keys(courses) as Course[]).map((id) => (
-              <button
-                key={id}
-                aria-pressed={course === id}
-                disabled={busy}
-                onClick={() => setDraft("learn-course", id)}
-              >
-                <span className="sf-kicker">
-                  {id === "advanced"
-                    ? "PRO PRACTICE"
-                    : id === recommended
-                      ? "BASED ON YOUR INTEREST"
-                      : "FREE FOUNDATION"}
-                </span>
-                <strong>{courses[id].title}</strong>
-                <small>
-                  {id === "advanced" && !pro
-                    ? "Preview and demo unlock"
-                    : lessonPassed(state!.learning, id)
-                      ? "Lesson checks passed"
-                      : courses[id].duration}
-                </small>
-              </button>
-            ))}
-          </div>
           <section className="sf-panel">
             <span className="sf-kicker">YOUR WORK → YOUR NEXT SKILL</span>
             <h2>{content.title}</h2>
@@ -512,10 +570,7 @@ export default function ShopFlowLearning({
                     <button
                       className="sf-button secondary"
                       onClick={() =>
-                        setDraft(
-                          "learn-course",
-                          course === "support" ? "qa" : "support",
-                        )
+                        selectCourse(course === "support" ? "qa" : "support")
                       }
                     >
                       Explore another role
