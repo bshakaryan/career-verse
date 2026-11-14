@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Dialog,
   DialogBackdrop,
@@ -258,7 +258,7 @@ export default function ShopFlow() {
       setError((e as Error).message);
     }
   }
-  async function act(action: Action) {
+  async function act(action: Action, keepPosition = false) {
     if (busyRef.current || !run) return false;
     busyRef.current = true;
     setBusy(true);
@@ -275,7 +275,7 @@ export default function ShopFlow() {
         runs: p.runs.map((r) => (r.id === run.id ? data.run : r)),
       }));
       setToast(data.state.history.at(-1)?.text || "Saved.");
-      if (screen === "workspace")
+      if (screen === "workspace" && !keepPosition)
         window.scrollTo({ top: 0, behavior: "smooth" });
       return true;
     } catch (e) {
@@ -346,10 +346,17 @@ export default function ShopFlow() {
         goApp("inbox");
         focus = `reply-${step.id}`;
         break;
-      case "escalation":
-        goApp("tasks");
-        focus = "sf-escalation";
+      case "escalation": {
+        const orderId =
+          orders.find(
+            (o) =>
+              state?.inspected.includes(o.id) &&
+              draft[`link-${o.id}`] === "yes",
+          )?.id || state?.inspected[0];
+        if (orderId) openEscalation(orderId);
+        else goApp("orders");
         break;
+      }
       case "ticket":
         goApp("tasks");
         focus = "sf-qa-ticket";
@@ -884,6 +891,136 @@ export default function ShopFlow() {
       </div>
     );
   }
+  function openEscalation(orderId: string) {
+    if (!state?.inspected.includes(orderId)) return;
+    setSelectedOrder(orderId);
+    if (!state.escalation) setDraft(`link-${orderId}`, "yes");
+    setDraft("escalation-order", orderId);
+    goApp("orders");
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const form = document.getElementById("sf-escalation");
+        form?.scrollIntoView({ behavior: "smooth", block: "center" });
+        form?.focus({ preventScroll: true });
+      }),
+    );
+  }
+  function escalationForm() {
+    if (!state) return null;
+    if (state.escalation)
+      return (
+        <section
+          className="sf-order-escalation"
+          id="sf-escalation"
+          tabIndex={-1}
+        >
+          <div className="sf-panel-heading">
+            <h3>QA-201 · Ticket created</h3>
+            <button
+              className="sf-text-button"
+              aria-label="Close ticket details"
+              onClick={() => setDraft("escalation-order", "")}
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <Badge tone="green">{state.escalation.priority} priority</Badge>
+          <p>{state.escalation.symptom}</p>
+          <p className="sf-muted">
+            Linked orders: {state.escalation.orderIds.join(", ") || "None"}
+          </p>
+          <p className="sf-muted">
+            This ticket carries forward into your QA investigation.
+          </p>
+        </section>
+      );
+    return (
+      <section className="sf-order-escalation" id="sf-escalation" tabIndex={-1}>
+        <div className="sf-panel-heading">
+          <div>
+            <span className="sf-kicker">HANDOFF TO QA</span>
+            <h3>Escalate the incident</h3>
+          </div>
+          <button
+            className="sf-text-button"
+            aria-label="Close ticket form"
+            onClick={() => setDraft("escalation-order", "")}
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <fieldset className="sf-form" disabled={busy}>
+          <div className="sf-field">
+            <span>Link inspected orders</span>
+            <div className="sf-escalation-orders">
+              {orders.map((o) => (
+                <label key={o.id}>
+                  <input
+                    type="checkbox"
+                    disabled={!state.inspected.includes(o.id)}
+                    checked={draft[`link-${o.id}`] === "yes"}
+                    onChange={(e) =>
+                      setDraft(`link-${o.id}`, e.target.checked ? "yes" : "no")
+                    }
+                  />
+                  <span>
+                    <b>
+                      {o.id} · {o.customer}
+                    </b>
+                    <small>
+                      {state.inspected.includes(o.id)
+                        ? `Paid ${money(actualTotal(o.cart))} · ${o.cart.category}`
+                        : "Inspect this order before linking it"}
+                    </small>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+          {textarea(
+            "symptom",
+            "Observed symptom",
+            "Describe what the customer reports and which orders share the pattern.",
+            3,
+          )}
+          <label className="sf-field">
+            Priority
+            <select
+              value={draft.priority || "Medium"}
+              onChange={(e) => setDraft("priority", e.target.value)}
+            >
+              {["Low", "Medium", "High"].map((p) => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
+          </label>
+          <Button
+            disabled={
+              busy || !orders.some((o) => draft[`link-${o.id}`] === "yes")
+            }
+            onClick={() =>
+              act(
+                {
+                  type: "INCIDENT_ESCALATED",
+                  orderIds: orders
+                    .filter((o) => draft[`link-${o.id}`] === "yes")
+                    .map((o) => o.id),
+                  symptom: draft.symptom || "",
+                  priority: (draft.priority || "Medium") as
+                    | "Low"
+                    | "Medium"
+                    | "High",
+                },
+                true,
+              )
+            }
+          >
+            Create QA ticket <ArrowRight size={16} />
+          </Button>
+        </fieldset>
+      </section>
+    );
+  }
   function workspaceContent() {
     if (!state || !run) return null;
     const supportLocked = state.stage !== "support";
@@ -1074,43 +1211,89 @@ export default function ShopFlow() {
                     <th>Promotion</th>
                     <th>Paid</th>
                     <th>Refund</th>
-                    <th />
+                    <th>Details</th>
+                    <th>Escalate incident</th>
                   </tr>
                 </thead>
                 <tbody>
                   {orders.map((order) => (
-                    <tr
-                      key={order.id}
-                      className={order.id === selectedOrder ? "selected" : ""}
-                    >
-                      <td>
-                        <b>{order.id}</b>
-                      </td>
-                      <td>{order.customer}</td>
-                      <td>{money(order.cart.subtotal)}</td>
-                      <td>{order.cart.promo}</td>
-                      <td>{money(actualTotal(order.cart))}</td>
-                      <td>
-                        {state.refunds[order.id] === undefined
-                          ? "Not decided"
-                          : money(state.refunds[order.id])}
-                      </td>
-                      <td>
-                        <button
-                          className="sf-text-button"
-                          disabled={busy}
-                          onClick={async () => {
-                            setSelectedOrder(order.id);
-                            await act({
-                              type: "ORDER_INSPECTED",
-                              id: order.id,
-                            });
-                          }}
-                        >
-                          Inspect
-                        </button>
-                      </td>
-                    </tr>
+                    <Fragment key={order.id}>
+                      <tr
+                        className={order.id === selectedOrder ? "selected" : ""}
+                      >
+                        <td>
+                          <b>{order.id}</b>
+                        </td>
+                        <td>{order.customer}</td>
+                        <td>{money(order.cart.subtotal)}</td>
+                        <td>{order.cart.promo}</td>
+                        <td>{money(actualTotal(order.cart))}</td>
+                        <td>
+                          {state.refunds[order.id] === undefined
+                            ? "Not decided"
+                            : money(state.refunds[order.id])}
+                        </td>
+                        <td>
+                          <button
+                            className="sf-text-button"
+                            disabled={busy}
+                            onClick={async () => {
+                              setSelectedOrder(order.id);
+                              await act({
+                                type: "ORDER_INSPECTED",
+                                id: order.id,
+                              });
+                            }}
+                          >
+                            Inspect
+                          </button>
+                        </td>
+                        <td>
+                          {state.escalation ? (
+                            state.escalation.orderIds.includes(order.id) ? (
+                              <button
+                                className="sf-text-button"
+                                onClick={() => openEscalation(order.id)}
+                              >
+                                QA-201 · View ticket
+                              </button>
+                            ) : (
+                              <span className="sf-muted">Not linked</span>
+                            )
+                          ) : supportLocked ? (
+                            <span className="sf-muted">Handoff closed</span>
+                          ) : (
+                            <button
+                              className="sf-text-button"
+                              disabled={
+                                busy || !state.inspected.includes(order.id)
+                              }
+                              aria-label={`Escalate ${order.id}`}
+                              aria-expanded={
+                                draft["escalation-order"] === order.id
+                              }
+                              aria-controls={
+                                draft["escalation-order"] === order.id
+                                  ? "sf-escalation"
+                                  : undefined
+                              }
+                              onClick={() => openEscalation(order.id)}
+                            >
+                              <Flag size={14} />{" "}
+                              {state.inspected.includes(order.id)
+                                ? "Escalate"
+                                : "Inspect first"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                      {draft["escalation-order"] === order.id &&
+                        (state.escalation || !supportLocked) && (
+                          <tr className="sf-escalation-row">
+                            <td colSpan={8}>{escalationForm()}</td>
+                          </tr>
+                        )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -1360,7 +1543,7 @@ export default function ShopFlow() {
                               : t.id === "CS-103"
                                 ? state.escalation || supportLocked
                                   ? "timeline"
-                                  : "tasks"
+                                  : "orders"
                                 : "orders",
                           )
                         }
@@ -1368,7 +1551,7 @@ export default function ShopFlow() {
                         {t.id === "CS-103"
                           ? state.escalation || supportLocked
                             ? "Review handoff history"
-                            : "Use escalation form below"
+                            : "Escalate from customer orders"
                           : "Open work"}
                         <ArrowRight size={14} />
                       </button>
@@ -1377,75 +1560,6 @@ export default function ShopFlow() {
               </section>
             ))}
           </div>
-          {!supportLocked && !state.escalation && (
-            <section className="sf-panel" id="sf-escalation" tabIndex={-1}>
-              <div className="sf-panel-heading">
-                <div>
-                  <span className="sf-kicker">HANDOFF TO QA</span>
-                  <h2>Escalate the incident</h2>
-                </div>
-                <Flag size={22} />
-              </div>
-              <fieldset className="sf-form" disabled={busy}>
-                <div className="sf-field">
-                  <span>Link inspected orders</span>
-                  <div className="sf-checks">
-                    {orders.map((o) => (
-                      <label key={o.id}>
-                        <input
-                          type="checkbox"
-                          disabled={!state.inspected.includes(o.id)}
-                          checked={draft[`link-${o.id}`] === "yes"}
-                          onChange={(e) =>
-                            setDraft(
-                              `link-${o.id}`,
-                              e.target.checked ? "yes" : "no",
-                            )
-                          }
-                        />
-                        {o.id}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                {textarea(
-                  "symptom",
-                  "Observed symptom",
-                  "Describe what the customer reports and which orders share the pattern.",
-                  3,
-                )}
-                <label className="sf-field">
-                  Priority
-                  <select
-                    value={draft.priority || "Medium"}
-                    onChange={(e) => setDraft("priority", e.target.value)}
-                  >
-                    {["Low", "Medium", "High"].map((p) => (
-                      <option key={p}>{p}</option>
-                    ))}
-                  </select>
-                </label>
-                <Button
-                  disabled={busy}
-                  onClick={() =>
-                    act({
-                      type: "INCIDENT_ESCALATED",
-                      orderIds: orders
-                        .filter((o) => draft[`link-${o.id}`] === "yes")
-                        .map((o) => o.id),
-                      symptom: draft.symptom || "",
-                      priority: (draft.priority || "Medium") as
-                        | "Low"
-                        | "Medium"
-                        | "High",
-                    })
-                  }
-                >
-                  Create QA ticket <ArrowRight size={16} />
-                </Button>
-              </fieldset>
-            </section>
-          )}
           {state.qaTicket && state.stage !== "support" && (
             <section className="sf-panel" id="sf-qa-ticket" tabIndex={-1}>
               <h3>QA-201 · inherited evidence</h3>

@@ -967,6 +967,53 @@
 .sf-table-scroll {
   overflow: auto;
 }
+.sf-order-escalation {
+  white-space: normal;
+  width: min(680px, calc(100vw - 88px));
+  max-width: 680px;
+  padding: 20px;
+  border: 1px solid #ded5f6;
+  border-radius: 12px;
+  background: #faf8ff;
+}
+.sf-app .sf-escalation-row > td {
+  padding: 8px 12px 20px;
+}
+.sf-order-escalation .sf-panel-heading {
+  margin-bottom: 16px;
+}
+.sf-escalation-orders {
+  display: grid;
+  gap: 8px;
+}
+.sf-escalation-orders label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e3ddef;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+}
+.sf-escalation-orders label:has(input:disabled) {
+  opacity: 0.6;
+  cursor: default;
+}
+.sf-escalation-orders input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  accent-color: var(--sf-purple);
+}
+.sf-escalation-orders span {
+  display: grid;
+  gap: 4px;
+}
+.sf-order-escalation > p {
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+}
 .sf-app table {
   width: 100%;
   border-collapse: collapse;

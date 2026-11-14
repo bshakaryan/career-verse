@@ -144,8 +144,8 @@ export function nextGuide(s: State, ticketReviewed = false): Guide {
       return {
         step: 4,
         title: "Give QA enough evidence to start",
-        text: "Select the affected orders, describe the shared symptom in your own words and choose a priority. Then create the QA ticket.",
-        button: "Prepare the QA ticket",
+        text: "In Customer orders, open Escalate beside an inspected order. Add related orders, describe the shared symptom and choose a priority, then create the ticket right there.",
+        button: "Open ticket in Customer orders",
         target: "escalation",
         tips: [
           "Link orders whose charge disagrees with the promotion requirements. A correctly charged order can be a useful control, but is not affected.",
