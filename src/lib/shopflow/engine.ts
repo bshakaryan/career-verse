@@ -1,5 +1,11 @@
 import { z } from "zod";
 import {
+  learningActions,
+  applyLearning,
+  newLearning,
+  type LearningState,
+} from "./learning";
+import {
   actualTotal,
   expectedTotal,
   shippingTotals,
@@ -23,6 +29,7 @@ export const reportSchema = z.object({
 });
 export type BugReport = z.infer<typeof reportSchema>;
 export const actionSchema = z.discriminatedUnion("type", [
+  ...learningActions,
   z.object({ type: z.literal("READ_MESSAGE"), id: shortText }),
   z.object({ type: z.literal("READ_DOCUMENT"), id: shortText }),
   z.object({ type: z.literal("ORDER_INSPECTED"), id: shortText }),
@@ -89,6 +96,7 @@ export type ReportAttempt = {
   minute: number;
 };
 export type State = {
+  learning: LearningState;
   supportAssessment: Assessment | null;
   followupMinutes: number;
   stage: "support" | "qa" | "complete";
@@ -138,6 +146,7 @@ const requireThat = (condition: unknown, message: string) => {
 };
 function initialState(): State {
   return {
+    learning: newLearning(),
     supportAssessment: null,
     followupMinutes: 0,
     stage: "support",
@@ -319,6 +328,16 @@ function apply(s: State, a: Action) {
     return o!;
   };
   switch (a.type) {
+    case "LESSON_ANSWERED":
+    case "SUPPORT_PRACTICE_SUBMITTED":
+    case "ADVANCED_PRACTICE_SUBMITTED":
+      requireThat(
+        s.stage === "complete",
+        "Complete your career comparison before starting the course.",
+      );
+      text = applyLearning(s.learning, a);
+      cost = a.type === "LESSON_ANSWERED" ? 0 : 3;
+      break;
     case "READ_MESSAGE":
       requireThat(
         a.id === "manager" || orders.some((o) => o.id === a.id),
@@ -560,8 +579,9 @@ export function recommendation(s: State) {
   const weak = [...support.criteria, ...(qa?.criteria || [])].sort(
     (a, b) => a.score - b.score,
   )[0];
-  const focus = weak.score === 100
-    ? "You met every rubric criterion in this incident. Next: apply those skills to a different defect at the free-shipping boundary."
-    : `Your lowest evidence-based criterion is ${weak.label.toLowerCase()} (${weak.score}/100). Next: test a free-shipping boundary and practice a complete, evidence-based handoff.`;
+  const focus =
+    weak.score === 100
+      ? "You met every rubric criterion in this incident. Next: choose a foundation lesson and apply your skills to a new case."
+      : `Your lowest evidence-based criterion is ${weak.label.toLowerCase()} (${weak.score}/100). Next: review the foundation lesson for the role you want to explore and apply it in a new case.`;
   return `You reported the most interest in ${role}. ${focus} Interest and performance are separate; this is practice guidance, not a career aptitude diagnosis.`;
 }

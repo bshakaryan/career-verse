@@ -13,8 +13,9 @@ A browser workplace simulation for adults exploring a career change. Resolve the
 - Functional checkout with an intentional category-dependent defect; structured, revisable bug reports checked against recorded tests.
 - Perspective Shift preserves the incident. Fresh Replay creates a separate run and keeps past attempts.
 - Transparent deterministic rubric: correctness 40%, investigation 25%, communication/documentation 20%, prioritization 15%. Self-reported career interest stays separate.
-- Persistent career path, form drafts, exportable work record and a playable free-shipping follow-up exercise.
-- Free/Pro pricing page and a working simulated upgrade. The $29/month price is a hypothesis. Pro unlocks a scenario brief, not a playable advanced simulation. No payment is taken.
+- Persistent career path, form drafts and exportable work record. Learning Studio connects Support and QA foundation lessons to knowledge checks, refund practice and the shipping-boundary assignment.
+- A role map explains the wider incident lifecycle and distinguishes the two playable roles from work owned by engineering, operations and the incident lead.
+- Free/Pro pricing page and a working simulated upgrade. The $29/month price is a hypothesis. Pro demo access unlocks a playable double-refund reconciliation assignment with a lesson, knowledge checks and calculated financial consequences. No payment is taken.
 
 **AI status:** This release is intentionally published without a live API key, as agreed for the demo. Chat uses clearly labelled authored guidance. The server-side OpenAI Responses adapter is implemented, but live AI has not been validated. Acceptance criterion 10 in the specification remains pending until a key is configured and a real response verified. Do not pitch this release as having demonstrated live AI.
 
@@ -54,6 +55,8 @@ pnpm build:hosted
 | `src/lib/shopflow/server.ts` | Shared HTTP handler, replay validation, optional grounded AI, honest fallback |
 | `src/app/api/shopflow/route.ts` | Next.js API adapter |
 | `src/lib/shopflow/progress.ts` | Browser persistence, schema validation and stale-tab write protection |
+| `src/lib/shopflow/learning.ts` | Authored lessons, validated learning actions and practice assessments |
+| `src/components/shopflow-learning.tsx` | Learning Studio, saved checks and revisable assignments |
 | `src/components/shopflow.tsx` | Workspace, role flows, report, career path and simulated paywall |
 | `worker/index.ts` | Production Worker serving bundled Vite assets and the same `/api/shopflow` handler |
 | `scripts/build-worker.mjs` | Bundles the Worker and embeds client assets without secrets |
@@ -94,16 +97,18 @@ The current guard permits 12 AI requests per IP per 10 minutes **per running iso
 6. Test $100 mixed + SAVE20 (charged $100), then $100 apparel + SAVE20 (charged $80).
 7. Submit a report with a specific title, preconditions, three explicit steps mentioning SAVE20 and accessories/mixed carts, expected $80, actual $100, High severity, accessories condition and the failing test.
 8. Compare roles, enter separate interest ratings, and build the career comparison.
-9. Complete the shipping-boundary exercise using $75 and a nearby passing control. Reload My Career Path to see saved results.
-10. Open Pro, enable the clearly simulated upgrade, then create a Fresh Replay and compare its independent history.
+9. Choose **Learn and practice your next skill**. Complete both checks in QA foundations, then test the shipping boundary at $75 and a nearby passing control. Finish the assignment and return to Learning Studio.
+10. Open Support foundations. Pass the two checks, then resolve SF-1071: $72 paid − $60 expected − $5 already refunded = $7 additional refund. Include SF-1071 and $7.00 in a clear reply and choose to confirm the payment status. Try an incorrect amount first to compare revisions.
+11. Open the Pro course, enable the clearly simulated upgrade and pass its checks. Cancel pending RF-902, retry the failed $15 refund for SF-2082 and leave SF-2083 unchanged. The successful batch has $0 excess and $0 remaining debt.
+12. Reload Learning Studio to verify saved lessons and attempts. Export the work record, then create a Fresh Replay to start independently.
 
 To demonstrate meaningful failure, refund $100 on SF-1042, skip escalation, or submit a vague QA report. The engine yields different financial consequences, QA delay and rubric results.
 
 ## Verification and limitations
 
-Automated tests cover promotion boundaries/controls, correct versus incorrect decisions, illegal transitions, inherited evidence, frozen Support scores, report validation, independent replay, follow-up arithmetic, persistence conflicts and API fallback. Browser QA covered the complete Support → QA → comparison → follow-up flow, reload recovery, simulated upgrade and separate replay.
+Automated tests cover lesson prerequisites, wrong-to-correct practice revisions, ledger reconciliation, learning persistence and isolation, promotion boundaries/controls, correct versus incorrect decisions, illegal transitions, inherited evidence, frozen Support scores, report validation, independent replay, follow-up arithmetic, persistence conflicts and API fallback. Browser QA covered the complete Support → QA → comparison → follow-up flow, reload recovery, simulated upgrade and separate replay.
 
-Guest storage is per browser and origin, limited to 12 runs, 200 events per run and 100 chat messages per run. Clearing site data loses progress. Export a work record before clearing. There are no real refunds, real customers, payments, employment guarantees or validated career-fit predictions. Pro features beyond the unlocked brief are planned.
+Guest storage is per browser and origin, limited to 12 runs, 200 events per run and 100 chat messages per run. Clearing site data loses progress. Export a work record before clearing. There are no real refunds, real customers, payments, employment guarantees or validated career-fit predictions. Additional course modules beyond the three shipped lessons are planned. Pro access is a browser-local demo gate, not a production billing entitlement; the learning API does not claim to enforce a paid subscription.
 
 The earlier Project Management prototype remains available through the legacy link. Its optional Supabase/server configuration and older tests are preserved, but it is not the ShopFlow core demo. Legacy scripts such as `scripts/smoke-test.py` exercise the older PM API only.
 
@@ -111,6 +116,6 @@ The earlier Project Management prototype remains available through the legacy li
 
 Target: employed US adults aged 25–45 exploring a move into technology. Problem and willingness to pay are hypotheses to validate in user interviews. The differentiator is **Perspective Shift + Shared Consequences**, not the number of job titles in a catalog.
 
-North-star metric: percentage completing both roles and their comparison. Next measures: follow-up completion, second-session rate and upgrade intent. Planned subscription economics require validated retention, acquisition cost and AI cost; this repository does not claim measured traction or market size.
+North-star metric: percentage completing both roles and their comparison. Next measures: lesson-to-assignment completion, second-session rate and upgrade intent. Planned subscription economics require validated retention, acquisition cost and AI cost; this repository does not claim measured traction or market size.
 
 See [approved specification](docs/product-spec.md). The pitch deck labels unvalidated pricing and market assumptions explicitly.

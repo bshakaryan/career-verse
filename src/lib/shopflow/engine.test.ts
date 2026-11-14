@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { actualTotal, expectedTotal, shippingTotals, orders } from "./data";
+import { courses, lessonPassed, type Course } from "./learning";
+import { progressSchema, emptyProgress } from "./progress";
 import {
   newRun,
   replay,
@@ -100,10 +102,16 @@ describe("ShopFlow connected incident", () => {
   });
   it("freezes support evidence before QA reads more documents", () => {
     let r = support();
-    r = {...r, events: r.events.filter(e => !(e.action.type === "READ_DOCUMENT" && e.action.id === "promotion"))};
+    r = {
+      ...r,
+      events: r.events.filter(
+        (e) =>
+          !(e.action.type === "READ_DOCUMENT" && e.action.id === "promotion"),
+      ),
+    };
     const before = assessSupport(replay(r));
     expect(before.total).toBeLessThan(100);
-    r = step(r, {type: "READ_DOCUMENT", id: "promotion"});
+    r = step(r, { type: "READ_DOCUMENT", id: "promotion" });
     expect(assessSupport(replay(r))).toEqual(before);
   });
   it("rejects repeated refunds, negative amounts and skipping the role workflow", () => {
@@ -195,4 +203,118 @@ describe("ShopFlow connected incident", () => {
     expect(replay(fresh).refunds).toEqual({});
     expect(replay(fresh).minutes).toBe(0);
   });
+  it("requires a completed incident and passed lesson checks before practice", () => {
+    expect(() =>
+      step(newRun(), {
+        type: "LESSON_ANSWERED",
+        course: "support",
+        question: 0,
+        choice: 1,
+      }),
+    ).toThrow("Complete your career comparison");
+    let r = completed();
+    expect(() =>
+      step(r, {
+        type: "SUPPORT_PRACTICE_SUBMITTED",
+        amount: 700,
+        nextStep: "confirm",
+        reply: "A customer reply that is not yet allowed.",
+      }),
+    ).toThrow("Pass both lesson checks");
+    r = step(r, {
+      type: "LESSON_ANSWERED",
+      course: "support",
+      question: 0,
+      choice: 0,
+    });
+    expect(lessonPassed(replay(r).learning, "support")).toBe(false);
+    r = learn(r, "support");
+    expect(lessonPassed(replay(r).learning, "support")).toBe(true);
+    expect(lessonPassed(replay(r).learning, "qa")).toBe(false);
+    expect(replay(r).learning.answers).toHaveLength(3);
+  });
+  it("reconciles existing refunds, keeps revisions and preserves first-incident scores", () => {
+    let r = learn(completed(), "support");
+    const before = replay(r).supportAssessment;
+    const reply =
+      "For SF-1071, the remaining refund is $7.00 after the $5 already returned. I will confirm its payment status and update you.";
+    r = step(r, {
+      type: "SUPPORT_PRACTICE_SUBMITTED",
+      amount: 1200,
+      nextStep: "promise",
+      reply,
+    });
+    const first = replay(r).learning.support[0];
+    expect(first.passed).toBe(false);
+    expect(first.excess).toBe(500);
+    r = step(r, {
+      type: "SUPPORT_PRACTICE_SUBMITTED",
+      amount: 700,
+      nextStep: "confirm",
+      reply,
+    });
+    const s = replay(r);
+    expect(s.learning.support[1]).toMatchObject({
+      score: 100,
+      passed: true,
+      excess: 0,
+      owed: 0,
+    });
+    expect(s.learning.support[0]).toEqual(first);
+    expect(s.supportAssessment).toEqual(before);
+    const persisted = progressSchema.parse(
+      JSON.parse(
+        JSON.stringify({ ...emptyProgress(), active: r.id, runs: [r] }),
+      ),
+    );
+    expect(replay(persisted.runs[0]).learning).toEqual(s.learning);
+    expect(replay(newRun()).learning.support).toEqual([]);
+  });
+  it("computes double-refund consequences and accepts a corrected reconciliation", () => {
+    let r = learn(completed(), "advanced");
+    r = step(r, {
+      type: "ADVANCED_PRACTICE_SUBMITTED",
+      duplicate: "refund",
+      failed: "skip",
+      correct: "refund",
+    });
+    expect(replay(r).learning.advanced[0]).toMatchObject({
+      score: 0,
+      passed: false,
+      excess: 10000,
+      owed: 1500,
+    });
+    r = step(r, {
+      type: "ADVANCED_PRACTICE_SUBMITTED",
+      duplicate: "cancel",
+      failed: "retry",
+      correct: "leave",
+    });
+    expect(replay(r).learning.advanced[1]).toMatchObject({
+      score: 100,
+      passed: true,
+      excess: 0,
+      owed: 0,
+    });
+    expect(replay(r).impact.refunded).toBe(3200);
+  });
 });
+
+function completed() {
+  return step(step(qa(), { type: "BUG_REPORT_SUBMITTED", report: good }), {
+    type: "SCENARIO_COMPLETED",
+    supportInterest: 4,
+    qaInterest: 5,
+    preference: "investigation",
+  });
+}
+function learn(run: Run, course: Course) {
+  for (const [question, q] of courses[course].questions.entries())
+    run = step(run, {
+      type: "LESSON_ANSWERED",
+      course,
+      question,
+      choice: q.answer,
+    });
+  return run;
+}

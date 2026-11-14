@@ -43,6 +43,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import CareerVerse from "./careerverse";
+import ShopFlowLearning from "./shopflow-learning";
+import { lessonPassed } from "@/lib/shopflow/learning";
 import {
   orders,
   documents,
@@ -70,7 +72,7 @@ import {
   type ChatMessage,
 } from "@/lib/shopflow/progress";
 
-type Screen = "home" | "workspace" | "path" | "pricing" | "pm";
+type Screen = "home" | "workspace" | "path" | "learn" | "pricing" | "pm";
 type App =
   | "inbox"
   | "tasks"
@@ -180,6 +182,7 @@ export default function ShopFlow() {
   const chats = progress.chats[progress.active || ""] || [];
   function navigate(next: Screen) {
     setDialog(null);
+    setToast("");
     setScreen(next);
     window.location.hash = next;
     window.scrollTo({ top: 0 });
@@ -190,7 +193,9 @@ export default function ShopFlow() {
       setScreen(
         ["practice", "careers"].includes(hash)
           ? "pm"
-          : ["home", "workspace", "path", "pricing", "pm"].includes(hash)
+          : ["home", "workspace", "path", "learn", "pricing", "pm"].includes(
+                hash,
+              )
             ? (hash as Screen)
             : "home",
       );
@@ -205,6 +210,20 @@ export default function ShopFlow() {
         parsed.runs.forEach(replay);
         progressRef.current = parsed;
         setProgress(parsed);
+        const activeRun = parsed.runs.find((r) => r.id === parsed.active);
+        const savedApp = parsed.drafts[parsed.active || ""]?.workspaceApp;
+        if (savedApp && apps.some((a) => a.id === savedApp)) {
+          setApp(savedApp as App);
+        } else if (activeRun) {
+          const stage = replay(activeRun).stage;
+          setApp(
+            stage === "complete"
+              ? "report"
+              : stage === "qa"
+                ? "tasks"
+                : "inbox",
+          );
+        }
       }
     } catch {
       setError(
@@ -289,6 +308,8 @@ export default function ShopFlow() {
   }
   function goApp(next: App) {
     setApp(next);
+    if (progressRef.current.active && !busyRef.current)
+      setDraft("workspaceApp", next);
     setToast("");
     window.scrollTo({ top: 0 });
   }
@@ -368,6 +389,14 @@ export default function ShopFlow() {
       JSON.stringify(state.interest),
       "",
       recommendation(state),
+      "",
+      "LEARNING & PRACTICE",
+      JSON.stringify(state.learning, null, 2),
+      "QA FOLLOW-UP REPORTS",
+      ...state.followupReports.map(
+        (a, i) =>
+          `Attempt ${i + 1}: ${a.score.total}/100 · ${a.ready ? "Ready" : "Needs revision"}\n${a.report.title}\n${a.score.criteria.map((c) => c.evidence).join("\n")}`,
+      ),
       "",
       "DECISION HISTORY",
       ...state.history.map((e) => `${clock(e.minute)} — ${e.text}`),
@@ -546,7 +575,11 @@ export default function ShopFlow() {
               title={`Attempt ${(practice ? state.followupReports : state.reports).length}`}
               data={result.score}
             />
-            {!practice && <Button onClick={() => goApp("report")}>Compare my roles <ArrowRight size={16} /></Button>}
+            {!practice && (
+              <Button onClick={() => goApp("report")}>
+                Compare my roles <ArrowRight size={16} />
+              </Button>
+            )}
             {practice && (
               <p className="sf-muted">
                 Documentation:{" "}
@@ -555,6 +588,11 @@ export default function ShopFlow() {
                 exercise. Different tasks; this is a practice comparison, not a
                 validated growth measure.
               </p>
+            )}
+            {practice && result.ready && (
+              <Button onClick={() => navigate("learn")}>
+                Finish assignment <CheckCircle2 size={16} />
+              </Button>
             )}
           </div>
         )}
@@ -697,7 +735,28 @@ export default function ShopFlow() {
             )}
           </section>
         </div>
-        {reportForm(practice)}
+        <div>
+          {practice && (
+            <section className="sf-panel">
+              <BookOpen size={20} />
+              <h3>Your QA assignment</h3>
+              <p>
+                Use the foundation lesson whenever you need a refresher. Your
+                report and tests stay saved.
+              </p>
+              <Button
+                secondary
+                onClick={() => {
+                  setDraft("learn-course", "qa");
+                  navigate("learn");
+                }}
+              >
+                Back to QA lesson
+              </Button>
+            </section>
+          )}
+          {reportForm(practice)}
+        </div>
       </div>
     );
   }
@@ -1080,6 +1139,76 @@ export default function ShopFlow() {
       ];
       return (
         <>
+          <section className="sf-panel">
+            <span className="sf-kicker">
+              ONE INCIDENT / SHARED RESPONSIBILITIES
+            </span>
+            <h2>Where your work goes next</h2>
+            <p className="sf-muted">
+              You play Support and QA. The wider team uses your evidence to
+              restore the service and reconcile customer balances.
+            </p>
+            <ol className="sf-process-map">
+              <li>
+                <b>01 · Support</b>
+                <span>
+                  Verify complaints, decide refunds and explain the next step.
+                </span>
+                <Badge tone={supportDone === 3 ? "green" : "purple"}>
+                  {supportDone}/3 customers reviewed
+                </Badge>
+              </li>
+              <li>
+                <b>02 · Incident lead & analytics</b>
+                <span>
+                  Assess scope, coordinate owners and decide how to limit
+                  further harm.
+                </span>
+                <Badge>
+                  {state.escalation
+                    ? "Evidence handed over"
+                    : "Waiting for escalation"}
+                </Badge>
+              </li>
+              <li>
+                <b>03 · QA</b>
+                <span>
+                  Reproduce the defect and give engineering a usable report.
+                </span>
+                <Badge tone={state.reports.at(-1)?.ready ? "green" : "purple"}>
+                  {state.reports.at(-1)?.ready
+                    ? "Handoff ready"
+                    : "Your next investigation"}
+                </Badge>
+              </li>
+              <li>
+                <b>04 · Engineering & operations</b>
+                <span>
+                  Fix, retest, release safely and monitor. A bug report alone
+                  does not resolve the incident.
+                </span>
+                <Badge>Team responsibility · outside this practice</Badge>
+              </li>
+              <li>
+                <b>05 · Payments & support</b>
+                <span>
+                  Reconcile outstanding refunds and keep customers informed.
+                </span>
+                <Badge>
+                  {money(state.impact.unresolvedOvercharge)} still owed in
+                  sampled orders
+                </Badge>
+              </li>
+              <li>
+                <b>06 · Incident review</b>
+                <span>
+                  Review the causes and add tests and safeguards against
+                  recurrence.
+                </span>
+                <Badge>After recovery is verified</Badge>
+              </li>
+            </ol>
+          </section>
           <div className="sf-kanban">
             {["Todo", "In Progress", "Blocked", "Done"].map((status) => (
               <section key={status}>
@@ -1104,13 +1233,17 @@ export default function ShopFlow() {
                             t.id.startsWith("QA")
                               ? "sandbox"
                               : t.id === "CS-103"
-                                ? (state.escalation || supportLocked ? "timeline" : "tasks")
+                                ? state.escalation || supportLocked
+                                  ? "timeline"
+                                  : "tasks"
                                 : "orders",
                           )
                         }
                       >
                         {t.id === "CS-103"
-                          ? (state.escalation || supportLocked ? "Review handoff history" : "Use escalation form below")
+                          ? state.escalation || supportLocked
+                            ? "Review handoff history"
+                            : "Use escalation form below"
                           : "Open work"}
                         <ArrowRight size={14} />
                       </button>
@@ -1225,7 +1358,7 @@ export default function ShopFlow() {
           </Button>
         </section>
       ) : (
-        sandbox(followup && state.stage === "complete")
+        sandbox(state.stage === "complete" || followup)
       );
     if (app === "chat")
       return (
@@ -1515,14 +1648,35 @@ export default function ShopFlow() {
         <section className="sf-panel">
           <h3>Your next step</h3>
           <p>{recommendation(state)}</p>
+          <div className="sf-run-stats">
+            <span>
+              Support assignment{" "}
+              <b>
+                {state.learning.support.at(-1)
+                  ? `${state.learning.support.at(-1)!.score}/100`
+                  : "Ready to start"}
+              </b>
+            </span>
+            <span>
+              QA assignment{" "}
+              <b>
+                {state.followupReports.at(-1)
+                  ? `${state.followupReports.at(-1)!.score.total}/100`
+                  : "Ready to start"}
+              </b>
+            </span>
+            <span>
+              Payment reconciliation{" "}
+              <b>
+                {state.learning.advanced.at(-1)
+                  ? `${state.learning.advanced.at(-1)!.score}/100`
+                  : "Pro practice"}
+              </b>
+            </span>
+          </div>
           <div className="sf-actions">
-            <Button
-              onClick={() => {
-                setFollowup(true);
-                goApp("sandbox");
-              }}
-            >
-              Practice the shipping boundary <ArrowRight size={16} />
+            <Button onClick={() => navigate("learn")}>
+              Learn and practice your next skill <ArrowRight size={16} />
             </Button>
             <Button
               secondary
@@ -1539,9 +1693,12 @@ export default function ShopFlow() {
         </section>
         <section className="sf-pro-strip">
           <div>
-            <Badge>CAREERVERSE PRO · CONCEPT</Badge>
+            <Badge>CAREERVERSE PRO · DEMO</Badge>
             <h3>Make your next workday a little less unfamiliar.</h3>
-            <p>Explore the subscription proposal after your free practice.</p>
+            <p>
+              Continue with short lessons, new assignments and advanced payment
+              practice.
+            </p>
           </div>
           <Button secondary onClick={() => navigate("pricing")}>
             View plans <ArrowRight size={16} />
@@ -1593,6 +1750,12 @@ export default function ShopFlow() {
             onClick={() => navigate("path")}
           >
             My career path
+          </button>
+          <button
+            aria-current={screen === "learn" ? "page" : undefined}
+            onClick={() => navigate("learn")}
+          >
+            Learn
           </button>
           <button
             aria-current={screen === "pricing" ? "page" : undefined}
@@ -1764,10 +1927,15 @@ export default function ShopFlow() {
                 ))}
             </div>
             {careerSearch &&
-              !["customer support specialist empathy communication judgment", "junior qa tester investigation precision documentation"].some((keywords) => keywords.includes(careerSearch.toLowerCase())) && (
+              ![
+                "customer support specialist empathy communication judgment",
+                "junior qa tester investigation precision documentation",
+              ].some((keywords) =>
+                keywords.includes(careerSearch.toLowerCase()),
+              ) && (
                 <p className="sf-muted">
-                  No careers match this search. Try “Support” or “QA”. More careers are
-                  planned.
+                  No careers match this search. Try “Support” or “QA”. More
+                  careers are planned.
                 </p>
               )}
           </section>
@@ -1789,10 +1957,10 @@ export default function ShopFlow() {
             </div>
             <div>
               <span>03</span>
-              <h3>Find your next practice step</h3>
+              <h3>Learn a skill. Try a new assignment.</h3>
               <p>
-                Compare evidence and your own interests. Try again with a
-                different approach.
+                Choose a foundation lesson, check your understanding and apply
+                it to a different case.
               </p>
             </div>
           </section>
@@ -1933,6 +2101,27 @@ export default function ShopFlow() {
           <Button onClick={() => setDialog("intro")}>Start the incident</Button>
         </main>
       )}
+      {screen === "learn" && (
+        <ShopFlowLearning
+          state={state}
+          busy={busy}
+          pro={progress.demoPro}
+          draft={draft}
+          setDraft={setDraft}
+          act={act}
+          onStart={() => (run ? navigate("workspace") : setDialog("intro"))}
+          onUpgrade={() => setDialog("upgrade")}
+          onQA={() => {
+            setFollowup(true);
+            goApp("sandbox");
+            navigate("workspace");
+          }}
+          onReport={() => {
+            setApp("report");
+            navigate("workspace");
+          }}
+        />
+      )}
       {screen === "path" && (
         <main className="sf-page">
           <span className="sf-kicker">MY CAREER PATH</span>
@@ -2019,6 +2208,20 @@ export default function ShopFlow() {
                           : "Continue your practice"}
                         <ArrowRight size={16} />
                       </Button>
+                      {s.stage === "complete" && (
+                        <Button
+                          onClick={() => {
+                            try {
+                              commit((p) => ({ ...p, active: r.id }));
+                              navigate("learn");
+                            } catch (e) {
+                              setError((e as Error).message);
+                            }
+                          }}
+                        >
+                          Continue learning <BookOpen size={16} />
+                        </Button>
+                      )}
                     </article>
                   );
                 })}
@@ -2026,32 +2229,24 @@ export default function ShopFlow() {
               {state?.stage === "complete" && (
                 <section className="sf-followup-card">
                   <span className="sf-career-icon">
-                    <FlaskConical size={28} />
+                    <BookOpen size={28} />
                   </span>
                   <div>
-                    <Badge
-                      tone={
-                        state.followupReports.at(-1)?.ready ? "green" : "muted"
-                      }
-                    >
-                      {state.followupReports.at(-1)?.ready
-                        ? "Completed · replay available"
-                        : "FREE FOLLOW-UP"}
-                    </Badge>
-                    <h2>The $75 shipping boundary</h2>
+                    <Badge tone="purple">LEARN → PRACTICE</Badge>
+                    <h2>Your next skill starts here.</h2>
                     <p>
-                      Practice a different test case and sharpen your bug
-                      report. 5–10 minutes.
+                      Support lessons{" "}
+                      {lessonPassed(state.learning, "support") ? "✓" : "0/1"} ·
+                      QA lessons{" "}
+                      {lessonPassed(state.learning, "qa") ? "✓" : "0/1"}
+                    </p>
+                    <p>
+                      New refund decisions, boundary tests and feedback on every
+                      attempt.
                     </p>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setFollowup(true);
-                      setApp("sandbox");
-                      navigate("workspace");
-                    }}
-                  >
-                    Continue practice <ArrowRight size={16} />
+                  <Button onClick={() => navigate("learn")}>
+                    Continue learning <ArrowRight size={16} />
                   </Button>
                 </section>
               )}
@@ -2066,8 +2261,8 @@ export default function ShopFlow() {
               <Badge>PRO SCENARIO · DEMO</Badge>
               <h3>The double-refund incident</h3>
               <p>
-                A future advanced scenario for ownership, handoffs and customer
-                trust.
+                A playable payment ledger: cancel duplicates, retry failed
+                refunds and protect customer balances.
               </p>
             </div>
             <Button secondary onClick={() => setDialog("upgrade")}>
@@ -2082,8 +2277,9 @@ export default function ShopFlow() {
           <span className="sf-kicker">KEEP EXPLORING</span>
           <h1>Try the work. Then choose your next step.</h1>
           <p className="sf-page-intro">
-            The complete two-role incident and one follow-up are free. Pro is a
-            pricing hypothesis for this hackathon — no real payments are
+            Try both professions, learn the foundations and complete new
+            assignments for free. Pro adds the double-refund incident. The
+            proposed price is $29/month; demo access is free and no payment is
             collected.
           </p>
           <div className="sf-pricing-grid">
@@ -2097,7 +2293,8 @@ export default function ShopFlow() {
                   "The complete Checkout Crisis",
                   "Customer Support + QA perspectives",
                   "Evidence-based career comparison",
-                  "One repeatable follow-up exercise",
+                  "Support and QA foundation lessons",
+                  "Refund and shipping-boundary assignments",
                   "Saved progress and work record export",
                 ].map((t) => (
                   <li key={t}>
@@ -2122,16 +2319,17 @@ export default function ShopFlow() {
                 $29 <small>/ month</small>
               </h2>
               <p className="sf-muted">
-                Planned benefits — not all available in the MVP.
+                Available now through demo access. More course modules are
+                planned.
               </p>
               <ul>
                 {[
-                  "New workplace incidents",
-                  "Advanced role simulations",
-                  "Practice based on your skill gaps",
-                  "Historical progress comparisons",
-                  "Job-description-aligned practice",
-                  "Interview preparation from your decisions",
+                  "The playable double-refund incident",
+                  "Payment ownership and reconciliation lesson",
+                  "Knowledge checks with explanations",
+                  "Financial consequences for every decision",
+                  "Saved attempts and revision comparisons",
+                  "Additional course modules — planned",
                 ].map((t) => (
                   <li key={t}>
                     <Check size={16} />
@@ -2308,24 +2506,33 @@ export default function ShopFlow() {
                 </DialogTitle>
                 <Description>
                   {progress.demoPro
-                    ? "Your local demo entitlement is enabled. Advanced incidents are planned and are not playable in this MVP. The free follow-up exercise is available now."
+                    ? "Your demo access includes the playable double-refund incident, its lesson and knowledge checks. Your free lessons remain available."
                     : "This tests the upgrade flow for a proposed $29/month subscription. No card details are requested and no money is charged."}
                 </Description>
                 <div className="sf-notice">
-                  The double-refund incident is a Pro-only content preview.
-                  Enabling demo access reveals its brief, not a finished
-                  simulation.
+                  Reconcile three customer accounts, cancel a pending duplicate
+                  and retry a failed refund. Decisions change the simulated
+                  financial outcome.
                 </div>
                 {progress.demoPro ? (
                   <>
                     <div className="sf-pro-brief">
-                      <h3>Unlocked brief: The double-refund incident</h3>
+                      <h3>Unlocked: The double-refund incident</h3>
                       <p>
                         A customer contacted two agents. Both issued a refund.
-                        Investigate ownership, identify the duplicated action
-                        and propose a safer handoff. Full scenario: planned.
+                        Investigate the ledger, choose the correct action for
+                        each account and review the consequences.
                       </p>
                     </div>
+                    <Button
+                      onClick={() => {
+                        if (state?.stage === "complete")
+                          setDraft("learn-course", "advanced");
+                        navigate("learn");
+                      }}
+                    >
+                      Open advanced practice <ArrowRight size={16} />
+                    </Button>
                     <Button
                       secondary
                       onClick={() => {
