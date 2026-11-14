@@ -18,9 +18,7 @@ import {
   Download,
   Sparkles,
   X,
-  BookOpen,
   Target,
-  Layers,
   LoaderCircle,
 } from "lucide-react";
 import {
@@ -33,6 +31,7 @@ import {
 } from "@/lib/scenario";
 import { emptyPlan, planSchema, type Plan, type Session } from "@/lib/types";
 import { transport } from "@/lib/transport";
+import CareerCatalog from "./career-catalog";
 type Capabilities = { ai: boolean; storage: boolean; persistent: boolean };
 type Payload = {
   session: Session | null;
@@ -41,6 +40,19 @@ type Payload = {
 };
 type Tab = "brief" | "tasks" | "alex" | "morgan";
 export default function CareerVerse() {
+  const [view, setView] = useState<"catalog" | "practice">("catalog");
+  useEffect(() => {
+    const syncView = () =>
+      setView(window.location.hash === "#practice" ? "practice" : "catalog");
+    syncView();
+    window.addEventListener("hashchange", syncView);
+    return () => window.removeEventListener("hashchange", syncView);
+  }, []);
+  function navigate(next: "catalog" | "practice") {
+    window.location.hash = next === "practice" ? "practice" : "careers";
+    setView(next);
+    window.scrollTo({ top: 0 });
+  }
   const [session, setSession] = useState<Session | null>(null);
   const [caps, setCaps] = useState<Capabilities>({
     ai: false,
@@ -146,6 +158,7 @@ export default function CareerVerse() {
         if (sessionRef.current === null && session)
           localStorage.removeItem("cv-draft-" + session.id);
         setReset(false);
+        navigate("catalog");
         setTab("brief");
         setPlan({ ...emptyPlan });
         planRef.current = { ...emptyPlan };
@@ -286,43 +299,62 @@ export default function CareerVerse() {
     );
   return (
     <>
-      <header className="topbar">
-        <button
-          className="brand-button"
-          onClick={() => {
-            if (session) setReset(true);
+      <div hidden={view !== "catalog" && !!session}>
+        <CareerCatalog
+          active={view === "catalog" || !session}
+          hasSession={!!session}
+          busy={busy}
+          canStart={caps.storage}
+          ai={caps.ai}
+          error={error}
+          onStart={async () => {
+            if (!sessionRef.current) {
+              const result = await act("start", {}, true);
+              if (!result?.session) return false;
+            }
+            navigate("practice");
+            return true;
           }}
-          aria-label={session ? "Start over" : "CareerVerse home"}
-        >
-          {logo}
-        </button>
-        <nav>
-          {session ? (
+        />
+      </div>
+      {view === "practice" && session && (
+        <header className="topbar">
+          <button
+            className="brand-button"
+            onClick={() => {
+              navigate("catalog");
+            }}
+            aria-label="CareerVerse home"
+          >
+            {logo}
+          </button>
+          <nav>
             <span className="breadcrumb">
               My workspace <ChevronRight size={14} /> Project Management
             </span>
-          ) : (
-            <>
-              <a href="#experience">The experience</a>
-              <a href="#how-it-works">How it works</a>
-            </>
-          )}
-        </nav>
-        <div className="top-actions">
-          <span className="mode-pill">
-            <span className={caps.ai ? "live-dot" : "preview-dot"} />
-            {caps.ai ? "AI connected" : "Practice preview"}
-          </span>
-          {session && (
+          </nav>
+          <div className="top-actions">
             <button
-              className="avatar user-avatar"
-              aria-label="Your guest workspace"
+              className="workspace-home"
+              onClick={() => navigate("catalog")}
             >
-              You
+              All careers
             </button>
-          )}
-        </div>
-      </header>
+            <span className="mode-pill">
+              <span className={caps.ai ? "live-dot" : "preview-dot"} />
+              {caps.ai ? "AI connected" : "Practice preview"}
+            </span>
+            {session && (
+              <button
+                className="avatar user-avatar"
+                aria-label="Your guest workspace"
+              >
+                You
+              </button>
+            )}
+          </div>
+        </header>
+      )}
       {error && (
         <div className="error-banner" role="alert">
           <AlertCircle size={18} />
@@ -336,156 +368,7 @@ export default function CareerVerse() {
           </button>
         </div>
       )}
-      {!session ? (
-        <main className="landing">
-          <section className="hero" id="experience">
-            <div className="hero-copy">
-              <div className="eyebrow">
-                <span className="tiny-star">✳</span> A SMALL STEP INTO YOUR NEXT
-                CHAPTER
-              </div>
-              <h1>
-                Your next role.
-                <br />
-                Your first <span>real practice.</span>
-              </h1>
-              <p className="hero-description">
-                Get a feel for the work before your first day. Step into a
-                realistic project, navigate the trade-offs, and build a plan you
-                can stand behind.
-              </p>
-              <div className="hero-cta">
-                <button
-                  className="button primary large"
-                  disabled={busy || !caps.storage}
-                  onClick={() => act("start", {}, true)}
-                >
-                  {busy ? (
-                    <LoaderCircle className="spin" size={19} />
-                  ) : (
-                    <>
-                      Step into the role <ArrowUpRight size={21} />
-                    </>
-                  )}
-                </button>
-                <span>
-                  No sign-up.
-                  <br />
-                  Just you and the challenge.
-                </span>
-              </div>
-              <div className="hero-facts">
-                <span>
-                  <Clock3 size={16} />
-                  20–30 minutes
-                </span>
-                <span>
-                  <Target size={16} />
-                  Beginner friendly
-                </span>
-                <span>
-                  <BookOpen size={16} />
-                  Learn by doing
-                </span>
-              </div>
-            </div>
-            <div
-              className="hero-art"
-              aria-label="Preview of the Project Management simulation"
-            >
-              <div className="art-orbit orbit-one" />
-              <div className="art-orbit orbit-two" />
-              <span className="art-plus plus-one">+</span>
-              <span className="art-plus plus-two">+</span>
-              <div className="mini-message">
-                <span className="avatar mint">AC</span>
-                <div>
-                  <b>Alex · Engineering</b>
-                  <p>We need to talk about Friday’s launch.</p>
-                </div>
-                <span className="notification-dot" />
-              </div>
-              <div className="role-card">
-                <div className="role-card-top">
-                  <span className="mini-tag">YOUR NEXT CHAPTER</span>
-                  <ArrowUpRight size={22} />
-                </div>
-                <div className="role-symbol">
-                  <Layers size={54} strokeWidth={1.3} />
-                </div>
-                <span className="overline">SIMULATION 001</span>
-                <h2>
-                  Project
-                  <br />
-                  Manager
-                </h2>
-                <p>
-                  A launch. A deadline.
-                  <br />
-                  Decisions that make a difference.
-                </p>
-                <div className="role-card-bottom">
-                  <span>Northstar / Product team</span>
-                  <span>01 →</span>
-                </div>
-              </div>
-              <div className="floating-note">
-                <span className="check-mark">
-                  <Check size={20} />
-                </span>
-                <div>
-                  <b>Small decisions. Real skills.</b>
-                  <p>Practice → reflect → improve</p>
-                </div>
-              </div>
-            </div>
-          </section>
-          <section className="experience-strip" id="how-it-works">
-            <div>
-              <span className="section-kicker">
-                LESS THEORY. MORE “I’VE GOT THIS.”
-              </span>
-              <h2>A workday, distilled.</h2>
-            </div>
-            <article>
-              <span className="step-number">01</span>
-              <h3>Step into a team</h3>
-              <p>
-                Explore the brief, meet your colleagues, and uncover the
-                constraints.
-              </p>
-            </article>
-            <article>
-              <span className="step-number">02</span>
-              <h3>Make the call</h3>
-              <p>Build a plan. Then adapt when the situation changes.</p>
-            </article>
-            <article>
-              <span className="step-number">03</span>
-              <h3>Reflect and improve</h3>
-              <p>
-                {caps.ai
-                  ? "Get specific feedback on your work and try a stronger approach."
-                  : "Use a clear rubric to reflect on your decisions and revise your work."}
-              </p>
-            </article>
-          </section>
-          {!caps.ai && (
-            <div className="preview-notice">
-              <Sparkles size={18} />
-              <p>
-                <strong>You’re exploring practice mode.</strong> Colleague notes
-                are prepared scenario material. Reviews are self-assessments;
-                live AI conversations and AI feedback are not connected yet.
-              </p>
-            </div>
-          )}
-          <footer>
-            <span>Built for your next chapter.</span>
-            <span>CareerVerse · Project Management lab</span>
-          </footer>
-        </main>
-      ) : (
+      {view === "practice" && session && (
         <main className="workspace">
           <aside className="sidebar">
             <span className="section-kicker">YOUR WORKSPACE</span>

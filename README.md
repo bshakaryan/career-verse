@@ -4,6 +4,10 @@ Practice your first week as a Project Manager. A fictional Northstar launch give
 
 ## Current status
 
+The homepage is a profession catalog with search by role or skill, field and availability filters, alphabetical sorting, and grid/list views. Headless UI provides the listboxes, switch and role details dialog. Project Management is available; the other five professions are marked as coming soon. Pagination appears automatically when the filtered catalog exceeds six roles.
+
+Opening a role starts or resumes the same practice at `#practice`. The home link and **All careers** return to `#careers` without resetting the session or draft. Catalog filters remain selected during these transitions. Browser Back/Forward also switches between the two views.
+
 The complete **practice mode** works without an API key or account. Colleague responses are explicitly labelled prepared scenario notes. Results are guided self-assessment, not AI-generated ratings. Users can revise, compare submitted text with the previous attempt, and export their work as JSON.
 
 The Next.js server also includes an OpenAI Responses API adapter and Supabase persistence. Those integrations are implemented but have **not been verified against live services**. No API key was provided or used. Do not present this release as validated AI feedback.
@@ -44,6 +48,7 @@ The timeboxed implementation uses an opaque, random, HttpOnly guest cookie rathe
 - `src/lib/ai.ts`: role-restricted context, separate assessment instructions, structured output validation and exact-quote checks.
 - `src/app/api/session/route.ts`: guest ownership, transitions, submissions, retry and request leasing.
 - `src/components/careerverse.tsx`: responsive interface, local draft recovery, review and export.
+- `src/components/career-catalog.tsx` and `src/app/catalog.css`: profession catalog and Headless UI controls.
 
 Progress: explore → initial plan → new QA constraint → final submission → reflection → revision. A guest can submit up to five attempts. AI mode permits at most 40 reserved AI requests per session and uses a shared daily request budget. A timeout/error preserves submitted work; a retry reuses the saved attempt. AI request budgeting counts reservations, including failed calls, to bound spend.
 
@@ -58,7 +63,7 @@ Progress: explore → initial plan → new QA constraint → final submission �
 
 ## Demo flow (3 minutes)
 
-Start → read the brief → open Alex's integration note → enter the four plan sections → continue → respond to the reduced QA allocation → write the client update → submit → use the four self-review criteria → improve the plan → export the work.
+Explore careers → Project Manager → Start practicing → read the brief → open Alex's integration note → enter the four plan sections → continue → respond to the reduced QA allocation → write the client update → submit → use the four self-review criteria → improve the plan → export the work.
 
 Describe the current build honestly: “This is our working practice flow. Prepared colleague notes and self-review are enabled; the server-side AI adapter is ready for integration testing.”
 
