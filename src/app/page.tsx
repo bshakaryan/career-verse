@@ -1,4 +1,4 @@
-import CareerVerse from "@/components/careerverse";
+import ShopFlow from "@/components/shopflow";
 export default function Page() {
-  return <CareerVerse />;
+  return <ShopFlow />;
 }

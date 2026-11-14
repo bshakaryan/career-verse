@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build:practice": "vite build",
-    "preview:practice": "vite --host 127.0.0.1"
+    "preview:practice": "pnpm build:hosted && pnpm preview:hosted",
+    "build:hosted": "vite build && node scripts/build-worker.mjs",
+    "preview:hosted": "node scripts/preview-worker.mjs"
   },
   "dependencies": {
     "@headlessui/react": "2.2.10",
@@ -25,6 +27,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "esbuild": "0.28.2",
     "typescript": "^5.9.0",
     "vite": "^8.3.8",
     "vitest": "^3.2.0"

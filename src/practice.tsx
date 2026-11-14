@@ -1,5 +1,5 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import CareerVerse from "./components/careerverse";
+import ShopFlow from "./components/shopflow";
 import "./app/globals.css";
-createRoot(document.getElementById("root")!).render(<CareerVerse />);
+createRoot(document.getElementById("root")!).render(<ShopFlow />);

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "CareerVerse — Practice your next chapter",
+  title: "CareerVerse — One crisis. Two careers.",
   description:
-    "Explore careers through realistic work simulations. Start with Project Management, practice real decisions, and improve your plan.",
+    "Experience Customer Support and QA in one connected workplace incident. Make decisions, switch perspectives, and discover your next practice step.",
 };
 export default function RootLayout({
   children,
