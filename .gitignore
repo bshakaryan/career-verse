@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.env*
+!.env.example
+.local-data/
+.vercel/
+*.tsbuildinfo
+coverage/
+
+dist/
+artifacts/
+
+outputs/
