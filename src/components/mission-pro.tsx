@@ -15,6 +15,7 @@ const planBenefits = [
   "Pro courses",
   "Learning progress tracking",
   "Personal feedback on your decisions",
+  "AI review of your written reports",
 ];
 type Plan = (typeof plans)[number]["id"];
 type View = "plans" | "library" | "case" | "courses" | "review";

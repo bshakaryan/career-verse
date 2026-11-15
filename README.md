@@ -16,6 +16,8 @@ Blind retries, duplicate charges and premature confirmations remain in the revie
 
 ### AI report text review
 
+AI is accessible immediately through **AI feedback** in the main navigation or **Try AI feedback** on Explore. The `#ai` screen provides an editable sample report and the corresponding payment evidence, without requiring a completed mission or plan selection. It calls the same real review endpoint only when requested. The sample investigator's recorded actions are clearly labelled; sample drafts and reviews use separate browser storage and do not alter Pro attempts. Revised text marks prior feedback as outdated.
+
 After submitting a case decision, open **AI writing coach**, write or revise the report and click **Analyze my report**. The server replays the attempt and sends the report plus computed evidence to OpenAI Responses with structured output and `store: false`. The review includes strengths, specific issues with verified verbatim quotes, suggested corrections, an example revision and a next step. It cannot change the practice score, payment state or release decision. Revisions and the latest review persist with the attempt; changing the text marks an old review as outdated.
 
 For local development, set `OPENAI_API_KEY` in the ignored `.env.local` file. `OPENAI_REPORT_MODEL` selects the review model (default `gpt-5.4-mini`); `OPENAI_CHAT_MODEL` is the fallback model setting. Restart the local server after changing environment variables. On deployment, configure the same server-side variables in the host's secret settings; `.env.local` is not uploaded to Sites or committed to Git. Do not use `NEXT_PUBLIC_` for the key. The Next.js route and hosted Worker both serve `/api/pro-review`.

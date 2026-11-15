@@ -7,8 +7,9 @@ import { savedTextReviewSchema, type SavedTextReview } from "@/lib/shopflow/pro-
 
 const categoryLabels = { accuracy: "Factual accuracy", evidence: "Evidence", clarity: "Clarity", missing_information: "Missing information" };
 
-export default function ProTextReview({ attempt, onDraft, onReview }: {
+export default function ProTextReview({ attempt, onDraft, onReview, demo = false }: {
   attempt: ProAttempt;
+  demo?: boolean;
   onDraft: (note: string) => void;
   onReview: (review: SavedTextReview) => void;
 }) {
@@ -57,13 +58,13 @@ export default function ProTextReview({ attempt, onDraft, onReview }: {
   }
 
   return <section className="pro-ai-review mission-pro-card" aria-labelledby="pro-ai-title">
-    <div><span className="mission-kicker">AI WRITING COACH</span><h2 id="pro-ai-title"><Sparkles size={22} /> Review the report you wrote</h2>
-      <p>Get feedback on your wording, factual claims and missing evidence. Revise your text and request another review.</p></div>
+    <div><span className="mission-kicker">AI WRITING COACH</span><h2 id="pro-ai-title"><Sparkles size={22} /> {demo ? "Your first AI review" : "Review the report you wrote"}</h2>
+      <p>{demo ? "Start with an example containing mistakes. Edit it or analyze it as written to see what AI finds." : "Get feedback on your wording, factual claims and missing evidence. Revise your text and request another review."}</p></div>
     <label htmlFor="pro-report-text">Your report</label>
     <textarea id="pro-report-text" rows={6} maxLength={4000} value={note} disabled={busy} onChange={e => { onDraft(e.target.value); setError(""); }} placeholder="Describe the original payment, what you investigated, your test evidence and the release recommendation." />
     <div className="pro-ai-controls"><span className="pro-muted">{note.length}/4,000 characters · at least 20</span>
       <button className="mission-primary" disabled={busy || note.trim().length < 20} onClick={analyze}><Sparkles size={16} /> {busy ? "Reviewing your report…" : review ? "Review revised report" : "Analyze my report"}</button></div>
-    <p className="pro-muted">When you request a review, your text and simulated case evidence are sent to OpenAI. AI feedback is advisory; your practice score and decisions stay unchanged.</p>
+    <p className="pro-muted">When you request a review, your text and simulated case evidence are sent to OpenAI. {demo ? "This sample is separate from your practice attempts. AI feedback is advisory." : "AI feedback is advisory; your practice score and decisions stay unchanged."}</p>
     {available === false && <p className="mission-demo-note" role="status">AI text review is not connected yet. You can write and save your report now.</p>}
     {error && <p className="pro-error" role="alert">{error}</p>}
     {busy && <p role="status">Checking your claims against the payment record and your test history…</p>}

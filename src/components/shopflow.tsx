@@ -46,6 +46,7 @@ import CareerVerse from "./careerverse";
 import MissionExperience from "./mission-experience";
 import MissionCourses, { type CourseId } from "./mission-courses";
 import MissionPro from "./mission-pro";
+import AiReviewDemo from "./ai-review-demo";
 import { nextGuide, type Guide } from "@/lib/shopflow/guide";
 import {
   orders,
@@ -74,7 +75,7 @@ import {
   type ChatMessage,
 } from "@/lib/shopflow/progress";
 
-type Screen = "home" | "workspace" | "learn" | "pricing" | "pm";
+type Screen = "home" | "workspace" | "learn" | "pricing" | "ai" | "pm";
 type App =
   | "inbox"
   | "tasks"
@@ -130,6 +131,7 @@ function SiteFooter({ onLearn }: { onLearn: () => void }) {
     { href: "#home", label: "Explore" },
     { href: "#workspace", label: "My experience" },
     { href: "#learn", label: "Learn" },
+    { href: "#ai", label: "AI feedback" },
     { href: "#pricing", label: "Pricing" },
   ];
 
@@ -255,7 +257,7 @@ export default function ShopFlow() {
           ? "pm"
           : hash === "path"
             ? "workspace"
-            : ["home", "workspace", "learn", "pricing", "pm"].includes(hash)
+            : ["home", "workspace", "learn", "pricing", "ai", "pm"].includes(hash)
               ? (hash as Screen)
               : "home",
       );
@@ -2222,6 +2224,10 @@ export default function ShopFlow() {
           >
             Explore
           </button>
+          <button className="sf-ai-nav"
+            aria-current={screen === "ai" ? "page" : undefined}
+            onClick={() => navigate("ai")}
+          ><Sparkles size={15} aria-hidden="true" /> AI feedback</button>
           <button
             aria-current={screen === "workspace" ? "page" : undefined}
             onClick={() => navigate("workspace")}
@@ -2272,13 +2278,13 @@ export default function ShopFlow() {
                 Start the free mission <ArrowRight size={18} />
               </Button>
             </div>
-            <aside className="sf-explore-audience" aria-labelledby="explore-audience">
-              <Users size={24} aria-hidden="true" />
-              <h2 id="explore-audience">Who is it for?</h2>
-              <p>
-                Students choosing what to study, people thinking about a career
-                change, and anyone curious about what tech teams do day to day.
-              </p>
+            <aside className="sf-ai-entry" aria-labelledby="explore-ai">
+              <span className="sf-ai-eyebrow"><Sparkles size={17} aria-hidden="true" /> AI REPORT COACH</span>
+              <h2 id="explore-ai">See what your report missed.</h2>
+              <p>Get specific feedback on your words, checked against the case evidence. Find mistakes, understand why, and improve your report.</p>
+              <div className="sf-ai-entry-steps"><span>Write a report</span><ArrowRight size={14} aria-hidden="true" /><span>Get AI feedback</span></div>
+              <Button onClick={() => navigate("ai")}>Try AI feedback <ArrowRight size={17} /></Button>
+              <small>Start with a sample case. No mission or plan required.</small>
             </aside>
           </section>
           <section className="sf-explore-section" aria-labelledby="explore-mission">
@@ -2301,6 +2307,11 @@ export default function ShopFlow() {
               </li>
             </ol>
           </section>
+          <aside className="sf-explore-audience sf-explore-audience-inline" aria-labelledby="explore-audience">
+            <Users size={24} aria-hidden="true" />
+            <div><h2 id="explore-audience">Who is it for?</h2>
+              <p>Students choosing what to study, people thinking about a career change, and anyone curious about what tech teams do day to day.</p></div>
+          </aside>
           <section className="sf-explore-next" aria-labelledby="explore-learn">
             <div>
               <h2 id="explore-learn">Find a role you’d like to keep exploring</h2>
@@ -2318,6 +2329,7 @@ export default function ShopFlow() {
           </section>
         </main>
       )}
+      {screen === "ai" && <AiReviewDemo onHome={() => navigate("home")} onPractice={() => navigate("pricing")} />}
       {screen === "workspace" && (
         <MissionExperience
           onHome={() => navigate("home")}
