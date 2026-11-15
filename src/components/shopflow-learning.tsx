@@ -211,7 +211,7 @@ export default function ShopFlowLearning({
                 : "This course and assignment are free."}
             </p>
             <button className="sf-button" onClick={onStart}>
-              {state ? "Continue my experience" : "Try the full experience"}
+              {state ? "Try a new role" : "Try the full experience"}
               <ArrowRight size={16} />
             </button>
           </section>

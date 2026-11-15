@@ -2226,7 +2226,7 @@ export default function ShopFlow() {
             }
           >
             {run && state?.stage !== "complete"
-              ? "Continue my experience"
+              ? "Try a new role"
               : "Try the full experience"}
             <ArrowRight size={18} />
           </Button>
