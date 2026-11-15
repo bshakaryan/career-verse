@@ -43,7 +43,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import CareerVerse from "./careerverse";
-import ShopFlowLearning from "./shopflow-learning";
+import MissionExperience from "./mission-experience";
+import MissionCourses from "./mission-courses";
 import { nextGuide, type Guide } from "@/lib/shopflow/guide";
 import {
   orders,
@@ -189,12 +190,12 @@ export default function ShopFlow() {
   const [aiReady, setAiReady] = useState(false);
   const [followup, setFollowup] = useState(false);
   const run = progress.runs.find((r) => r.id === progress.active);
-  const state = run ? replay(run) : null;
+  const state = (run ? replay(run) : null) as State;
   const draft = progress.drafts[progress.active || ""] || {};
   const chats = progress.chats[progress.active || ""] || [];
-  const guide = state
+  const guide = (state
     ? nextGuide(state, draft["qa-ticket-reviewed"] === "yes")
-    : null;
+    : null) as Guide;
   function navigate(next: Screen) {
     setDialog(null);
     setToast("");
@@ -2190,14 +2191,12 @@ export default function ShopFlow() {
           >
             Explore
           </button>
-          {run && (
-            <button
-              aria-current={screen === "workspace" ? "page" : undefined}
-              onClick={() => navigate("workspace")}
-            >
-              My experience
-            </button>
-          )}
+          <button
+            aria-current={screen === "workspace" ? "page" : undefined}
+            onClick={() => navigate("workspace")}
+          >
+            My experience
+          </button>
           <button
             aria-current={screen === "learn" ? "page" : undefined}
             onClick={() => navigate("learn")}
@@ -2222,54 +2221,49 @@ export default function ShopFlow() {
       {screen === "home" && (
         <main className="sf-explore">
           <h1>
-            One workday.
+            One bug.
             <br />
-            <em>Two perspectives.</em>
+            <em>Three roles.</em>
           </h1>
           <Button
             disabled={busy}
-            onClick={() =>
-              run && state?.stage !== "complete"
-                ? navigate("workspace")
-                : setDialog(run ? "replay" : "intro")
-            }
+            onClick={() => navigate("workspace")}
           >
-            {run && state?.stage !== "complete"
-              ? "Try a new role"
-              : "Try the full experience"}
+            Start the mission
             <ArrowRight size={18} />
           </Button>
           <ol className="sf-explore-flow">
             <li>
               <span>01</span>
               <div>
-                <h2>Start in Customer Support</h2>
-                <p>Read a complaint, check the order and decide how to help.</p>
+                <h2>Help the customer</h2>
+                <p>Create a clear bug ticket for the team.</p>
               </div>
             </li>
             <li>
               <span>02</span>
               <div>
-                <h2>Continue as a QA Tester</h2>
-                <p>
-                  Follow your handoff, test the checkout and report the defect.
-                </p>
+                <h2>Fix the code</h2>
+                <p>Choose the change that makes the Pay button work.</p>
               </div>
             </li>
             <li>
               <span>03</span>
               <div>
-                <h2>Reflect on the experience</h2>
-                <p>
-                  See the consequences of your decisions and discover what you
-                  want to learn.
-                </p>
+                <h2>Test and resolve</h2>
+                <p>Verify the fix, then tell the customer it is ready.</p>
               </div>
             </li>
           </ol>
         </main>
       )}
-      {screen === "workspace" && state && (
+      {screen === "workspace" && (
+        <MissionExperience
+          onHome={() => navigate("home")}
+          onLearn={() => navigate("learn")}
+        />
+      )}
+      {state && false && screen === "workspace" && (
         <div className="sf-workstation">
           <aside className="sf-sidebar">
             <div className="sf-company">
@@ -2477,33 +2471,14 @@ export default function ShopFlow() {
           </main>
         </div>
       )}
-      {screen === "workspace" && !state && (
+      {false && screen === "workspace" && !state && (
         <main className="sf-page">
           <h1>Your first shift is waiting.</h1>
           <Button onClick={() => setDialog("intro")}>Start the incident</Button>
         </main>
       )}
       {screen === "learn" && (
-        <ShopFlowLearning
-          key={progress.active || "guest"}
-          state={state}
-          busy={busy}
-          pro={progress.demoPro}
-          draft={draft}
-          setDraft={setDraft}
-          act={act}
-          onStart={() => (run ? navigate("workspace") : setDialog("intro"))}
-          onUpgrade={() => setDialog("upgrade")}
-          onQA={() => {
-            setFollowup(true);
-            goApp("sandbox");
-            navigate("workspace");
-          }}
-          onReport={() => {
-            setApp("report");
-            navigate("workspace");
-          }}
-        />
+        <MissionCourses onMission={() => navigate("workspace")} />
       )}
       {screen === "pricing" && (
         <main className="sf-page sf-pricing">
