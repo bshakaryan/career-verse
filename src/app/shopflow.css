@@ -1,5 +1,6 @@
 .sf-app,
 .sf-dialog,
+.sf-site-footer,
 .sf-legacy-banner {
   --sf-ink: #202331;
   --sf-muted: #727686;
@@ -13,7 +14,23 @@
 }
 .sf-app {
   background: #f7f8fc;
+}
+.sf-site-frame {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
+}
+.sf-site-frame > .mission-intro,
+.sf-site-frame > .mission-shell,
+.sf-site-frame > .mission-course-page,
+.sf-site-frame .cv-catalog,
+.sf-site-frame > .workspace {
+  min-height: 0;
+}
+.sf-site-frame > .mission-intro,
+.sf-site-frame > .mission-shell {
+  flex-grow: 1;
 }
 .sf-app button,
 .sf-dialog button {
@@ -35,7 +52,8 @@
 }
 .sf-app button:focus-visible,
 .sf-dialog button:focus-visible,
-.sf-app a:focus-visible {
+.sf-app a:focus-visible,
+.sf-site-footer a:focus-visible {
   outline: 3px solid #b6afff;
   outline-offset: 3px;
 }
@@ -2298,11 +2316,12 @@
 .sf-explore-next button {
   flex-shrink: 0;
 }
-.sf-explore-footer {
+.sf-site-footer {
+  margin-top: auto;
   background: white;
   border-top: 1px solid var(--sf-line);
 }
-.sf-explore-footer-inner {
+.sf-site-footer-inner {
   max-width: 1160px;
   margin: 0 auto;
   padding: 24px 28px;
@@ -2312,16 +2331,16 @@
   gap: 20px;
   flex-wrap: wrap;
 }
-.sf-explore-footer a {
+.sf-site-footer a {
   text-decoration: none;
   color: inherit;
 }
-.sf-explore-footer nav {
+.sf-site-footer nav {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 24px;
 }
-.sf-explore-footer nav a:hover {
+.sf-site-footer nav a:hover {
   text-decoration: underline;
 }
 @media (max-width: 720px) {

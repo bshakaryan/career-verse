@@ -125,6 +125,34 @@ function Badge({
 }) {
   return <span className={`sf-badge ${tone}`}>{children}</span>;
 }
+function SiteFooter({ onLearn }: { onLearn: () => void }) {
+  const links = [
+    { href: "#home", label: "Explore" },
+    { href: "#workspace", label: "My experience" },
+    { href: "#learn", label: "Learn" },
+    { href: "#pricing", label: "Pricing" },
+  ];
+
+  return (
+    <footer className="sf-site-footer">
+      <div className="sf-site-footer-inner">
+        <a className="sf-brand" href="#home" onClick={() => window.scrollTo({ top: 0 })}>
+          <span><Orbit size={23} aria-hidden="true" /></span>
+          CareerVerse
+        </a>
+        <nav aria-label="Footer navigation">
+          {links.map(({ href, label }) => (
+            <a key={href} href={href} onClick={() => {
+              if (href === "#learn") onLearn();
+              window.scrollTo({ top: 0 });
+            }}>{label}</a>
+          ))}
+        </nav>
+      </div>
+    </footer>
+  );
+}
+
 function Button({
   children,
   onClick,
@@ -2157,7 +2185,7 @@ export default function ShopFlow() {
   }
   if (screen === "pm")
     return (
-      <>
+      <div className="sf-site-frame">
         <div className="sf-legacy-banner">
           <button onClick={() => navigate("home")}>
             <ArrowLeft size={15} />
@@ -2166,7 +2194,8 @@ export default function ShopFlow() {
           <span>Earlier Project Management practice</span>
         </div>
         <CareerVerse />
-      </>
+        <SiteFooter onLearn={() => setStarterCourse(undefined)} />
+      </div>
     );
   if (!ready)
     return (
@@ -2177,7 +2206,7 @@ export default function ShopFlow() {
     );
   return (
     <div
-      className={`sf-app ${screen === "workspace" && state ? "sf-at-work" : ""}`}
+      className={`sf-app sf-site-frame ${screen === "workspace" && state ? "sf-at-work" : ""}`}
     >
       <header className="sf-topbar">
         <button className="sf-brand" onClick={() => navigate("home")}>
@@ -2230,83 +2259,64 @@ export default function ShopFlow() {
         </div>
       )}
       {screen === "home" && (
-        <>
-          <main className="sf-explore">
-            <section className="sf-explore-hero">
-              <div>
-                <h1>Try a <em>new job</em></h1>
-                <p className="sf-explore-intro">
-                  CareerVerse lets you try jobs in tech through interactive
-                  simulations. In your first mission, step into a support,
-                  developer, and QA role to fix a broken checkout.
-                </p>
-                <Button disabled={busy} onClick={() => navigate("workspace")}>
-                  Start the free mission <ArrowRight size={18} />
-                </Button>
-              </div>
-              <aside className="sf-explore-audience" aria-labelledby="explore-audience">
-                <Users size={24} aria-hidden="true" />
-                <h2 id="explore-audience">Who is it for?</h2>
-                <p>
-                  Students choosing what to study, people thinking about a career
-                  change, and anyone curious about what tech teams do day to day.
-                </p>
-              </aside>
-            </section>
-            <section className="sf-explore-section" aria-labelledby="explore-mission">
-              <h2 id="explore-mission">What you’ll do in the first mission</h2>
-              <ol className="sf-explore-flow" role="list">
-                <li>
-                  <Headphones size={22} aria-hidden="true" />
-                  <h3>Customer Support</h3>
-                  <p>Ask the customer what happened and turn their report into a bug ticket.</p>
-                </li>
-                <li>
-                  <Code2 size={22} aria-hidden="true" />
-                  <h3>Software Developer</h3>
-                  <p>Reproduce the problem, choose a fix, and tell QA what to check.</p>
-                </li>
-                <li>
-                  <FlaskConical size={22} aria-hidden="true" />
-                  <h3>QA Tester</h3>
-                  <p>Test the checkout and decide if the fix is ready for customers.</p>
-                </li>
-              </ol>
-            </section>
-            <section className="sf-explore-next" aria-labelledby="explore-learn">
-              <div>
-                <h2 id="explore-learn">Find a role you’d like to keep exploring</h2>
-                <p>
-                  After the mission, pick the role you enjoyed most and try a
-                  free starter lesson.
-                </p>
-              </div>
-              <Button secondary onClick={() => {
-                setStarterCourse(undefined);
-                navigate("learn");
-              }}>
-                Browse lessons <ArrowRight size={16} />
+        <main className="sf-explore">
+          <section className="sf-explore-hero">
+            <div>
+              <h1>Try a <em>new job</em></h1>
+              <p className="sf-explore-intro">
+                CareerVerse lets you try jobs in tech through interactive
+                simulations. In your first mission, step into a support,
+                developer, and QA role to fix a broken checkout.
+              </p>
+              <Button disabled={busy} onClick={() => navigate("workspace")}>
+                Start the free mission <ArrowRight size={18} />
               </Button>
-            </section>
-          </main>
-          <footer className="sf-explore-footer">
-            <div className="sf-explore-footer-inner">
-              <a className="sf-brand" href="#home" onClick={() => window.scrollTo({ top: 0 })}>
-                <span><Orbit size={23} aria-hidden="true" /></span>
-                CareerVerse
-              </a>
-              <nav aria-label="Footer navigation">
-                <a href="#home" onClick={() => window.scrollTo({ top: 0 })}>Explore</a>
-                <a href="#workspace" onClick={() => window.scrollTo({ top: 0 })}>My experience</a>
-                <a href="#learn" onClick={() => {
-                  setStarterCourse(undefined);
-                  window.scrollTo({ top: 0 });
-                }}>Learn</a>
-                <a href="#pricing" onClick={() => window.scrollTo({ top: 0 })}>Pricing</a>
-              </nav>
             </div>
-          </footer>
-        </>
+            <aside className="sf-explore-audience" aria-labelledby="explore-audience">
+              <Users size={24} aria-hidden="true" />
+              <h2 id="explore-audience">Who is it for?</h2>
+              <p>
+                Students choosing what to study, people thinking about a career
+                change, and anyone curious about what tech teams do day to day.
+              </p>
+            </aside>
+          </section>
+          <section className="sf-explore-section" aria-labelledby="explore-mission">
+            <h2 id="explore-mission">What you’ll do in the first mission</h2>
+            <ol className="sf-explore-flow" role="list">
+              <li>
+                <Headphones size={22} aria-hidden="true" />
+                <h3>Customer Support</h3>
+                <p>Ask the customer what happened and turn their report into a bug ticket.</p>
+              </li>
+              <li>
+                <Code2 size={22} aria-hidden="true" />
+                <h3>Software Developer</h3>
+                <p>Reproduce the problem, choose a fix, and tell QA what to check.</p>
+              </li>
+              <li>
+                <FlaskConical size={22} aria-hidden="true" />
+                <h3>QA Tester</h3>
+                <p>Test the checkout and decide if the fix is ready for customers.</p>
+              </li>
+            </ol>
+          </section>
+          <section className="sf-explore-next" aria-labelledby="explore-learn">
+            <div>
+              <h2 id="explore-learn">Find a role you’d like to keep exploring</h2>
+              <p>
+                After the mission, pick the role you enjoyed most and try a
+                free starter lesson.
+              </p>
+            </div>
+            <Button secondary onClick={() => {
+              setStarterCourse(undefined);
+              navigate("learn");
+            }}>
+              Browse lessons <ArrowRight size={16} />
+            </Button>
+          </section>
+        </main>
       )}
       {screen === "workspace" && (
         <MissionExperience
@@ -2547,6 +2557,7 @@ export default function ShopFlow() {
           }} />
         </main>
       )}
+      <SiteFooter onLearn={() => setStarterCourse(undefined)} />
       <Dialog
         open={!!dialog}
         onClose={() => {
