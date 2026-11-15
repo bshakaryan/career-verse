@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Dialog,
   DialogBackdrop,
@@ -394,7 +394,7 @@ export default function ShopFlow() {
               draft[`link-${o.id}`] === "yes",
           )?.id || state?.inspected[0];
         if (orderId) openEscalation(orderId);
-        else goApp("tickets");
+        else goApp("orders");
         break;
       }
       case "ticket":
@@ -993,10 +993,14 @@ export default function ShopFlow() {
     if (!state?.inspected.includes(orderId)) return;
     setSelectedOrder(orderId);
     if (!state.escalation) setDraft(`link-${orderId}`, "yes");
-    goApp("tickets");
+    setDraft("escalation-order", orderId);
+    goApp("orders", orderId);
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         const form = document.getElementById("sf-escalation");
+        form
+          ?.closest(".sf-table-scroll")
+          ?.scrollTo({ left: 0, behavior: "smooth" });
         form?.scrollIntoView({ behavior: "smooth", block: "center" });
         form?.focus({ preventScroll: true });
       }),
@@ -1015,7 +1019,13 @@ export default function ShopFlow() {
             <span className="sf-kicker">HANDOFF TO QA</span>
             <h3>Escalate the incident</h3>
           </div>
-          <Badge>New ticket</Badge>
+          <button
+            className="sf-text-button"
+            aria-label="Close ticket form"
+            onClick={() => setDraft("escalation-order", "")}
+          >
+            <X size={18} />
+          </button>
         </div>
         <fieldset className="sf-form" disabled={busy}>
           <div className="sf-field">
@@ -1146,16 +1156,17 @@ export default function ShopFlow() {
           </section>
         );
       return (
-        <>
+        <section className="sf-panel sf-ticket-panel">
+          <span className="sf-kicker">INCIDENT TICKETS</span>
+          <h2>No ticket created yet</h2>
           <p className="sf-muted">
-            Create a ticket for QA from the orders you’ve inspected. Your draft
-            is saved as you type.
+            Open Customer orders and choose Create ticket beside an inspected
+            order. The saved QA-201 ticket will appear here.
           </p>
-          {escalationForm()}
           <Button secondary onClick={() => goApp("orders")}>
-            Back to customer orders
+            Open customer orders <ArrowRight size={16} />
           </Button>
-        </>
+        </section>
       );
     }
     if (app === "inbox") {
@@ -1358,101 +1369,117 @@ export default function ShopFlow() {
                 </thead>
                 <tbody>
                   {orders.map((order) => (
-                    <tr
-                      key={order.id}
-                      className={order.id === selectedOrder ? "selected" : ""}
-                    >
-                      <td>
-                        <a
-                          className="sf-record-link"
-                          href={`#workspace?app=inbox&order=${order.id}`}
-                          aria-label={`${order.id} · Open customer message`}
-                          onClick={(event) => {
-                            if (
-                              event.metaKey ||
-                              event.ctrlKey ||
-                              event.shiftKey ||
-                              event.altKey
-                            )
-                              return;
-                            event.preventDefault();
-                            setSelectedMessage(order.id);
-                            goApp("inbox", order.id);
-                            void act({ type: "READ_MESSAGE", id: order.id });
-                          }}
-                        >
-                          <Mail size={14} />
-                          {order.id}
-                          <ArrowUpRight size={13} />
-                        </a>
-                      </td>
-                      <td>{order.customer}</td>
-                      <td>{money(order.cart.subtotal)}</td>
-                      <td>{order.cart.promo}</td>
-                      <td>{money(actualTotal(order.cart))}</td>
-                      <td>
-                        {state.refunds[order.id] === undefined
-                          ? "Not decided"
-                          : money(state.refunds[order.id])}
-                      </td>
-                      <td>
-                        <button
-                          className="sf-text-button"
-                          disabled={busy}
-                          onClick={async () => {
-                            setSelectedOrder(order.id);
-                            goApp("orders", order.id);
-                            await act({
-                              type: "ORDER_INSPECTED",
-                              id: order.id,
-                            });
-                          }}
-                        >
-                          Inspect
-                        </button>
-                      </td>
-                      <td>
-                        {state.escalation ? (
-                          state.escalation.orderIds.includes(order.id) ? (
-                            <a
-                              className="sf-record-link"
-                              href="#workspace?app=tickets"
-                              onClick={(event) => {
-                                if (
-                                  event.metaKey ||
-                                  event.ctrlKey ||
-                                  event.shiftKey ||
-                                  event.altKey
-                                )
-                                  return;
-                                event.preventDefault();
-                                goApp("tickets");
-                              }}
-                            >
-                              QA-201 <ArrowUpRight size={13} />
-                            </a>
-                          ) : (
-                            <span className="sf-muted">Not linked</span>
-                          )
-                        ) : supportLocked ? (
-                          <span className="sf-muted">Handoff closed</span>
-                        ) : (
+                    <Fragment key={order.id}>
+                      <tr
+                        className={order.id === selectedOrder ? "selected" : ""}
+                      >
+                        <td>
+                          <a
+                            className="sf-record-link"
+                            href={`#workspace?app=inbox&order=${order.id}`}
+                            aria-label={`${order.id} · Open customer message`}
+                            onClick={(event) => {
+                              if (
+                                event.metaKey ||
+                                event.ctrlKey ||
+                                event.shiftKey ||
+                                event.altKey
+                              )
+                                return;
+                              event.preventDefault();
+                              setSelectedMessage(order.id);
+                              goApp("inbox", order.id);
+                              void act({ type: "READ_MESSAGE", id: order.id });
+                            }}
+                          >
+                            <Mail size={14} />
+                            {order.id}
+                            <ArrowUpRight size={13} />
+                          </a>
+                        </td>
+                        <td>{order.customer}</td>
+                        <td>{money(order.cart.subtotal)}</td>
+                        <td>{order.cart.promo}</td>
+                        <td>{money(actualTotal(order.cart))}</td>
+                        <td>
+                          {state.refunds[order.id] === undefined
+                            ? "Not decided"
+                            : money(state.refunds[order.id])}
+                        </td>
+                        <td>
                           <button
                             className="sf-text-button"
-                            disabled={
-                              busy || !state.inspected.includes(order.id)
-                            }
-                            aria-label={`Escalate ${order.id}`}
-                            onClick={() => openEscalation(order.id)}
+                            disabled={busy}
+                            onClick={async () => {
+                              setSelectedOrder(order.id);
+                              goApp("orders", order.id);
+                              await act({
+                                type: "ORDER_INSPECTED",
+                                id: order.id,
+                              });
+                            }}
                           >
-                            <Flag size={14} />{" "}
-                            {state.inspected.includes(order.id)
-                              ? "Create ticket"
-                              : "Inspect first"}
+                            Inspect
                           </button>
+                        </td>
+                        <td>
+                          {state.escalation ? (
+                            state.escalation.orderIds.includes(order.id) ? (
+                              <a
+                                className="sf-record-link"
+                                href="#workspace?app=tickets"
+                                onClick={(event) => {
+                                  if (
+                                    event.metaKey ||
+                                    event.ctrlKey ||
+                                    event.shiftKey ||
+                                    event.altKey
+                                  )
+                                    return;
+                                  event.preventDefault();
+                                  goApp("tickets");
+                                }}
+                              >
+                                QA-201 <ArrowUpRight size={13} />
+                              </a>
+                            ) : (
+                              <span className="sf-muted">Not linked</span>
+                            )
+                          ) : supportLocked ? (
+                            <span className="sf-muted">Handoff closed</span>
+                          ) : (
+                            <button
+                              className="sf-text-button"
+                              disabled={
+                                busy || !state.inspected.includes(order.id)
+                              }
+                              aria-label={`Escalate ${order.id}`}
+                              aria-expanded={
+                                draft["escalation-order"] === order.id
+                              }
+                              aria-controls={
+                                draft["escalation-order"] === order.id
+                                  ? "sf-escalation"
+                                  : undefined
+                              }
+                              onClick={() => openEscalation(order.id)}
+                            >
+                              <Flag size={14} />{" "}
+                              {state.inspected.includes(order.id)
+                                ? "Create ticket"
+                                : "Inspect first"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                      {draft["escalation-order"] === order.id &&
+                        !state.escalation &&
+                        !supportLocked && (
+                          <tr className="sf-escalation-row">
+                            <td colSpan={8}>{escalationForm()}</td>
+                          </tr>
                         )}
-                      </td>
-                    </tr>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

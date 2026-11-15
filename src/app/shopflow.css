@@ -969,12 +969,22 @@
 }
 .sf-ticket-panel {
   white-space: normal;
-  width: 100%;
+  width: min(680px, calc(100vw - 72px));
   max-width: 680px;
   padding: 20px;
   border: 1px solid #ded5f6;
   border-radius: 12px;
   background: #faf8ff;
+}
+.sf-app .sf-escalation-row > td {
+  padding: 8px 12px 20px;
+  background: #faf8ff;
+}
+@media (max-width: 800px) {
+  .sf-app .sf-escalation-row > td {
+    position: sticky;
+    left: 0;
+  }
 }
 .sf-ticket-panel .sf-panel-heading {
   margin-bottom: 16px;
