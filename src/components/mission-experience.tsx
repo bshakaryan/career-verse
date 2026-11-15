@@ -154,7 +154,6 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
             return <div key={role.label}><span><Icon size={22} /></span><b>{name}</b>{index < 2 && <ArrowRight className="mission-chain-arrow" size={18} />}</div>;
           })}
         </div>
-        <div className="mission-reassurance"><Sparkles size={17} />Don’t worry if you have never worked in IT. We will guide you at every step.</div>
         <button className="mission-primary mission-large" onClick={() => setPhase("support")}>Start Mission <ArrowRight size={18} /></button>
       </div>
     </main>

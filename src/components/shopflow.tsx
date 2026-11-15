@@ -2232,9 +2232,7 @@ export default function ShopFlow() {
       {screen === "home" && (
         <main className="sf-explore">
           <h1>
-            One bug.
-            <br />
-            <em>Three roles.</em>
+            Try a <em>new job</em>
           </h1>
           <Button
             disabled={busy}
