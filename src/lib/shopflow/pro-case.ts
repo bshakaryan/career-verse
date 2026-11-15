@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { savedTextReviewSchema } from "./pro-review-contract";
 
 export const proCaseKey = "careerverse-pro-practice-v1";
 export const scenarios = {
@@ -37,11 +38,15 @@ export const reportSchema = z.object({
 });
 export type ProReport = z.infer<typeof reportSchema>;
 export const emptyReport: ProReport = { decision: "hold", cause: "unknown", evidence: "none", recommendation: "retry", note: "" };
-const attemptSchema = z.object({
+export const coreAttemptSchema = z.object({
   scenario: z.enum(["captured", "interrupted"]),
   actions: z.array(actionSchema).max(100),
   report: reportSchema.nullable(),
+}).strict();
+const attemptSchema = coreAttemptSchema.extend({
   draft: reportSchema.default(emptyReport),
+  reviewDraft: z.string().max(4000).optional(),
+  textReview: savedTextReviewSchema.optional(),
 });
 export type ProAttempt = z.infer<typeof attemptSchema>;
 const practiceSchema = z.object({ version: z.literal(1), current: attemptSchema, history: z.array(attemptSchema).max(8) });

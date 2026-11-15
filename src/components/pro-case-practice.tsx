@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight, Check, ClipboardCheck, FlaskConical, History, Search, RotateCcw } from "lucide-react";
+import ProTextReview from "./pro-text-review";
 import {
   actOnAttempt, assessAttempt, fixes, money, replayAttempt, scenarios, startNext, submitAttempt, testCases,
   type Fix, type ProAction, type ProPractice, type ProReport, type TestCase,
@@ -120,7 +121,7 @@ export default function ProCasePractice({ practice, onChange }: { practice: ProP
               <option value="hold">Hold release</option><option value="release">Approve release</option></select></label>
           </div>
           <label>Handoff note (optional)<textarea rows={3} maxLength={1600} placeholder="Describe what you found and any remaining blocker." value={report.note} onChange={e => draft({ note: e.target.value })} /></label>
-          <p className="pro-muted">The review checks your selected claims against recorded actions and test results. Your note is saved for reflection; its writing quality is not scored.</p>
+          <p className="pro-muted">Your practice score uses recorded actions and selected claims. After submitting, you can request a separate AI review of your report's wording and evidence.</p>
           <button className="mission-primary" type="submit">Submit decision & see consequences <ArrowRight size={16} /></button>
         </form>}
         {attempt.actions.length >= 100 && <p role="status">This attempt has reached 100 actions. Submit your decision to review it and start a fresh attempt.</p>}
@@ -132,6 +133,9 @@ export default function ProCasePractice({ practice, onChange }: { practice: ProP
         <div className="pro-findings">{assessment.findings.map(f => <article key={f.title} className={f.good ? "pro-finding good" : "pro-finding needs-work"}>
           <div><h3>{f.good && <Check size={18} />} {f.title}</h3><b>{f.good ? f.points : 0}/{f.points}</b></div><p>{f.detail}</p>{!f.good && <p className="pro-next"><b>Next time:</b> {f.next}</p>}</article>)}</div>
         {attempt.report.note && <blockquote className="pro-saved-note"><b>Your handoff note</b><p>{attempt.report.note}</p></blockquote>}
+        <ProTextReview attempt={attempt}
+          onDraft={reviewDraft => onChange({ ...practice, current: { ...attempt, reviewDraft } })}
+          onReview={textReview => onChange({ ...practice, current: { ...attempt, textReview } })} />
         <div className="pro-next-actions"><button className="mission-primary" onClick={() => { onChange(startNext(practice, attempt.scenario)); setTab("investigate"); setError(""); setRefund(""); }}><RotateCcw size={16} /> Retry this case</button>
           <button className="mission-secondary" onClick={() => { onChange(startNext(practice, attempt.scenario === "captured" ? "interrupted" : "captured")); setTab("investigate"); setError(""); setRefund(""); }}>Try a different failure <ArrowRight size={16} /></button></div>
         <p className="pro-muted">A new attempt starts with a fresh order. Your last eight results stay on this device. Scores describe this practice task, not career aptitude.</p>

@@ -12,7 +12,17 @@ Open Pricing, choose a demo plan and start **Checkout after a timeout**. A faile
 
 Choose a timeout recovery policy and test it against normal checkout, interruption before capture and interruption after capture. New fixes invalidate previous test evidence. Submit a structured handoff and release decision to receive an action-based review across recovery (30), investigation (20), regression coverage (25), handoff evidence (15) and release judgment (10).
 
-Blind retries, duplicate charges and premature confirmations remain in the review even after recovery. Retry with a fresh order to compare results, or try the alternate failure. Current actions, report drafts and the last eight completed attempts persist on this browser/origin. The optional handoff note is retained but its writing quality is not scored. No OpenAI key or live model is needed for this case; feedback is computed from recorded actions. All payments, refunds and subscription upgrades are simulated.
+Blind retries, duplicate charges and premature confirmations remain in the review even after recovery. Retry with a fresh order to compare results, or try the alternate failure. Current actions, report drafts and the last eight completed attempts persist on this browser/origin. All payments, refunds and subscription upgrades are simulated.
+
+### AI report text review
+
+After submitting a case decision, open **AI writing coach**, write or revise the report and click **Analyze my report**. The server replays the attempt and sends the report plus computed evidence to OpenAI Responses with structured output and `store: false`. The review includes strengths, specific issues with verified verbatim quotes, suggested corrections, an example revision and a next step. It cannot change the practice score, payment state or release decision. Revisions and the latest review persist with the attempt; changing the text marks an old review as outdated.
+
+For local development, set `OPENAI_API_KEY` in the ignored `.env.local` file. `OPENAI_REPORT_MODEL` selects the review model (default `gpt-5.4-mini`); `OPENAI_CHAT_MODEL` is the fallback model setting. Restart the local server after changing environment variables. On deployment, configure the same server-side variables in the host's secret settings; `.env.local` is not uploaded to Sites or committed to Git. Do not use `NEXT_PUBLIC_` for the key. The Next.js route and hosted Worker both serve `/api/pro-review`.
+
+The review runs only on explicit request. With no key, a timeout, a refusal, invalid output or provider failure, the report and deterministic result remain usable and the UI reports that AI review did not complete. Limits are six requests per visitor and 120 total per ten minutes **per running isolate**, not a global billing cap or paid-access enforcement. This guest demo is not a tamper-resistant assessment: the server validates and recomputes client action logs, not their historical authenticity. Configure provider spend controls and durable limits before wider paid operation. The configured model must support Responses structured output and medium reasoning effort.
+
+Live validation on 2026-11-15 used the local Next.js endpoint and `gpt-5.4-mini`: with identical actions and structured answers, a correct $79 report received no issues, while contradictory prose received four grounded issues covering the captured amount, invented retries/refund, timeout interpretation and unsafe retry advice. A correct $49 report also received no material issues in the browser, and its review survived reload. Early runs exposed false-positive comments, so the context now includes explicit timeout timing and current-build test results, with medium reasoning and instructions to verify criticisms against the whole report. This is a small smoke test, not a comprehensive quality evaluation; language matching was inconsistent on English input. The public deployment and its secrets are separate and were not updated by this local check.
 
 Implementation: `src/lib/shopflow/pro-case.ts`, `src/components/pro-case-practice.tsx`. Tests cover incorrect and correct outcomes, repaired mistakes, the alternate failure, regression invalidation, handoff evidence and persistence.
 
@@ -32,7 +42,7 @@ The sections below describe the earlier Support → QA simulation engine retaine
 - A role map explains the wider incident lifecycle and distinguishes the two playable roles from work owned by engineering, operations and the incident lead.
 - Free/Pro pricing page and a working simulated upgrade. The $29/month price is a hypothesis. Pro demo access unlocks a playable double-refund reconciliation assignment with a lesson, knowledge checks and calculated financial consequences. No payment is taken.
 
-**AI status:** This release is intentionally published without a live API key, as agreed for the demo. Chat uses clearly labelled authored guidance. The server-side OpenAI Responses adapter is implemented, but live AI has not been validated. Acceptance criterion 10 in the specification remains pending until a key is configured and a real response verified. Do not pitch this release as having demonstrated live AI.
+**Earlier engine AI status:** The published demo uses clearly labelled authored chat guidance. Its server-side OpenAI Responses adapter has not been validated live; the Pro report review validation described above applies to a separate endpoint. Acceptance criterion 10 for the earlier engine remains pending.
 
 ## Local setup
 
