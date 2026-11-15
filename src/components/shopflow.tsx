@@ -1177,6 +1177,12 @@ export default function ShopFlow() {
             <h3>
               Inbox <Badge>{orders.length + 1}</Badge>
             </h3>
+            <p className="sf-mail-list-help">
+              {guide?.target === "message"
+                ? "Open the message marked Start here. The others are queued for later."
+                : "The other conversations are queued. Follow your next step before opening them."
+              }
+            </p>
             {[
               {
                 id: "manager",
@@ -1196,7 +1202,7 @@ export default function ShopFlow() {
             ].map((m) => (
               <button
                 disabled={busy}
-                className={selectedMessage === m.id ? "selected" : ""}
+                className={`${selectedMessage === m.id ? "selected" : ""} ${guide?.target === "message" && guide.id === m.id ? "recommended" : ""}`}
                 key={m.id}
                 onClick={async () => {
                   setSelectedMessage(m.id);
@@ -1208,6 +1214,9 @@ export default function ShopFlow() {
                 <span>
                   <b>{m.name}</b>
                   <small>{m.subject}</small>
+                  {guide?.target === "message" && guide.id === m.id && (
+                    <span className="sf-mail-task-label">Start here</span>
+                  )}
                 </span>
                 {!state.read.includes(m.id) && <i />}
               </button>

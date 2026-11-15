@@ -870,6 +870,15 @@
   justify-content: space-between;
   font-size: 14px;
 }
+.sf-mail-list-help {
+  margin: -7px 14px 14px;
+  padding: 10px 11px;
+  border-radius: 8px;
+  background: #f4f1ff;
+  color: #68589c;
+  font-size: 10px;
+  line-height: 1.45;
+}
 .sf-mail-list > button {
   width: 100%;
   display: flex;
@@ -886,6 +895,10 @@
   background: #f4f1ff;
   box-shadow: inset 3px 0 #8c78dc;
 }
+.sf-mail-list > button.recommended:not(.selected) {
+  background: #fbfaff;
+  box-shadow: inset 3px 0 #8c78dc;
+}
 .sf-mail-list b {
   display: block;
   font-size: 11px;
@@ -896,6 +909,18 @@
   font-size: 10px;
   color: #928aa5;
   line-height: 1.6;
+}
+.sf-mail-task-label {
+  display: inline-flex;
+  margin-top: 7px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #6f57d9;
+  color: white;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .sf-mail-list .sf-avatar {
   width: 29px;
@@ -2034,6 +2059,10 @@
   .sf-mail-list h3 {
     grid-column: 1/-1;
     padding: 12px 15px;
+  }
+  .sf-mail-list-help {
+    grid-column: 1/-1;
+    margin: -4px 9px 9px;
   }
   .sf-mail-list > button {
     padding: 12px 9px;
