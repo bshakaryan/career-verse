@@ -2212,18 +2212,11 @@ export default function ShopFlow() {
       )}
       {screen === "home" && (
         <main className="sf-explore">
-          <span className="sf-kicker">
-            TRY A PROFESSION BEFORE YOU CHOOSE IT
-          </span>
           <h1>
             One workday.
             <br />
             <em>Two perspectives.</em>
           </h1>
-          <p className="sf-explore-intro">
-            A shop’s checkout is charging customers incorrectly. Step into the
-            team, help the customers and investigate what went wrong.
-          </p>
           <Button
             disabled={busy}
             onClick={() =>
@@ -2237,10 +2230,6 @@ export default function ShopFlow() {
               : "Try the full experience"}
             <ArrowRight size={18} />
           </Button>
-          <p className="sf-small">
-            20–30 minutes · Free · No account needed
-            <br />A step-by-step guide stays with you throughout.
-          </p>
           <ol className="sf-explore-flow">
             <li>
               <span>01</span>
