@@ -8,15 +8,17 @@ const plans = [
   { id: "yearly", title: "Yearly", price: "$100", period: "year", detail: "Save $140 compared with 12 monthly payments" },
 ] as const;
 type Plan = (typeof plans)[number]["id"];
-type View = "library" | "case" | "courses" | "review";
+type View = "plans" | "library" | "case" | "courses" | "review";
 
-const courses = [
+const proCourses = [
   {
     title: "Release decisions for QA",
+    summary: "Decide whether a build is ready to release based on test results.",
     lesson: "Check the most important user journey first. If a customer cannot tell whether a payment went through, record what the customer sees and compare it with the order record. Use that evidence when you recommend holding a release.",
   },
   {
     title: "Writing a bug report from evidence",
+    summary: "Turn a payment mismatch into a report another tester can verify.",
     lesson: "Record the scenario, steps, expected behavior and actual result. In a payment timeout, distinguish the message on screen from the payment status in the order record. Include both so another tester can repeat your check.",
   },
 ];
@@ -33,21 +35,73 @@ function saveFlag(key: string, value: string) {
   try { localStorage.setItem(key, value); } catch { /* This session still works. */ }
 }
 
-export default function MissionPro({ onBack }: { onBack: () => void }) {
+export function useProCourseAccess() {
   const [plan, setPlan] = useState<Plan | null>(null);
-  const [view, setView] = useState<View>("library");
-  const [checked, setChecked] = useState<string[]>([]);
-  const [decision, setDecision] = useState<"hold" | "release" | null>(null);
-  const [caseDone, setCaseDone] = useState(false);
-  const [courseDone, setCourseDone] = useState<string[]>([]);
-  const [work, setWork] = useState("");
-  const [reviewReady, setReviewReady] = useState(false);
+  const [completed, setCompleted] = useState<string[]>([]);
 
   useEffect(() => {
     const savedPlan = readFlag("careerverse-pro-plan");
     if (savedPlan === "monthly" || savedPlan === "yearly") setPlan(savedPlan);
+    setCompleted(proCourses.filter(({ title }) => readFlag("careerverse-course-" + title) === "done").map(({ title }) => title));
+  }, []);
+
+  function selectPlan(next: Plan) {
+    saveFlag("careerverse-pro-plan", next);
+    setPlan(next);
+  }
+
+  function completeCourse(title: string) {
+    saveFlag("careerverse-course-" + title, "done");
+    setCompleted((current) => current.includes(title) ? current : [...current, title]);
+  }
+
+  return { plan, selectPlan, completed, completeCourse };
+}
+
+export function ProCourseCards({
+  access,
+  onPricing,
+}: {
+  access: ReturnType<typeof useProCourseAccess>;
+  onPricing: () => void;
+}) {
+  return (
+    <div className="mission-plan-grid">
+      {proCourses.map(({ title, summary, lesson }) => (
+        <article className="mission-pro-card" key={title}>
+          <div><span className="mission-course-badge mission-pro-badge">PRO</span></div>
+          <h2>{title}</h2>
+          <p>{summary}</p>
+          {access.plan ? (
+            <details className="mission-course-open">
+              <summary>{access.completed.includes(title) ? "Review course · Completed" : "Open course"}</summary>
+              <p>{lesson}</p>
+              <button className="mission-primary" disabled={access.completed.includes(title)}
+                onClick={() => access.completeCourse(title)}>
+                {access.completed.includes(title) ? <><Check size={15} /> Completed</> : "Mark lesson complete"}
+              </button>
+            </details>
+          ) : (
+            <button className="mission-secondary" onClick={onPricing}>View Pro plans <ArrowRight size={15} /></button>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+export default function MissionPro({ onBack }: { onBack: () => void }) {
+  const access = useProCourseAccess();
+  const { plan } = access;
+  const [view, setView] = useState<View>("plans");
+  const [checked, setChecked] = useState<string[]>([]);
+  const [decision, setDecision] = useState<"hold" | "release" | null>(null);
+  const [caseDone, setCaseDone] = useState(false);
+  const [work, setWork] = useState("");
+  const [reviewReady, setReviewReady] = useState(false);
+
+  useEffect(() => {
     setCaseDone(readFlag("careerverse-pro-case") === "done");
-    setCourseDone(courses.filter(({ title }) => readFlag("careerverse-course-" + title) === "done").map(({ title }) => title));
     const savedWork = readFlag("careerverse-pro-review");
     if (savedWork) {
       setWork(savedWork);
@@ -60,7 +114,7 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
     window.scrollTo({ top: 0 });
   }
 
-  if (!plan) return (
+  if (!plan || view === "plans") return (
     <>
       <button className="mission-course-back" onClick={onBack}><ArrowLeft size={15} /> Back to Learn</button>
       <span className="mission-kicker">CAREERVERSE PRO</span>
@@ -74,9 +128,9 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
             <p className="mission-plan-price">{item.price} <small>/ {item.period}</small></p>
             <p>{item.detail}</p>
             <button className="mission-primary" onClick={() => {
-              saveFlag("careerverse-pro-plan", item.id);
-              setPlan(item.id);
-            }}>Try {item.title.toLowerCase()} demo <ArrowRight size={16} /></button>
+              access.selectPlan(item.id);
+              changeView("library");
+            }}>{plan === item.id ? "Open Pro workspace" : `Try ${item.title.toLowerCase()} demo`} <ArrowRight size={16} /></button>
           </article>
         ))}
       </div>
@@ -86,8 +140,8 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
   const active = plans.find((item) => item.id === plan)!;
   return (
     <>
-      <button className="mission-course-back" onClick={view === "library" ? onBack : () => changeView("library")}>
-        <ArrowLeft size={15} /> {view === "library" ? "Back to Learn" : "Back to Pro workspace"}
+      <button className="mission-course-back" onClick={() => changeView(view === "library" ? "plans" : "library")}>
+        <ArrowLeft size={15} /> {view === "library" ? "Back to Pricing" : "Back to Pro workspace"}
       </button>
       <span className="mission-kicker">PRO DEMO · {active.title.toUpperCase()} · {active.price}/{active.period}</span>
       {view === "library" && (
@@ -102,7 +156,7 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
             </article>
             <article className="mission-pro-card">
               <h2>Courses</h2>
-              <p>{courseDone.length} of {courses.length} courses completed</p>
+              <p>{access.completed.length} of {proCourses.length} courses completed</p>
               <button className="mission-primary" onClick={() => changeView("courses")}>Open courses</button>
             </article>
             <article className="mission-pro-card">
@@ -111,10 +165,6 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
               <button className="mission-primary" onClick={() => changeView("review")}>Try feedback demo</button>
             </article>
           </div>
-          <button className="mission-secondary" onClick={() => {
-            saveFlag("careerverse-pro-plan", "");
-            setPlan(null);
-          }}>View both plans</button>
         </>
       )}
       {view === "case" && (
@@ -154,17 +204,7 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
       {view === "courses" && (
         <>
           <h1>Pro courses</h1>
-          <div className="mission-pro-stack">
-            {courses.map(({ title, lesson }) => (
-              <article className="mission-pro-card" key={title}>
-                <h2>{title}</h2><p>{lesson}</p>
-                <button className="mission-primary" disabled={courseDone.includes(title)} onClick={() => {
-                  saveFlag("careerverse-course-" + title, "done");
-                  setCourseDone([...courseDone, title]);
-                }}>{courseDone.includes(title) ? <><Check size={15} /> Completed</> : "Mark lesson complete"}</button>
-              </article>
-            ))}
-          </div>
+          <ProCourseCards access={access} onPricing={() => changeView("plans")} />
         </>
       )}
       {view === "review" && (

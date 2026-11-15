@@ -45,6 +45,7 @@ import {
 import CareerVerse from "./careerverse";
 import MissionExperience from "./mission-experience";
 import MissionCourses, { type CourseId } from "./mission-courses";
+import MissionPro from "./mission-pro";
 import { nextGuide, type Guide } from "@/lib/shopflow/guide";
 import {
   orders,
@@ -2199,13 +2200,19 @@ export default function ShopFlow() {
             My experience
           </button>
           <button
-            aria-current={screen === "learn" || screen === "pricing" ? "page" : undefined}
+            aria-current={screen === "learn" ? "page" : undefined}
             onClick={() => {
               setStarterCourse(undefined);
               navigate("learn");
             }}
           >
             Learn
+          </button>
+          <button
+            aria-current={screen === "pricing" ? "page" : undefined}
+            onClick={() => navigate("pricing")}
+          >
+            Pricing
           </button>
         </nav>
         <div className="sf-guest">
@@ -2484,18 +2491,21 @@ export default function ShopFlow() {
           <Button onClick={() => setDialog("intro")}>Start the incident</Button>
         </main>
       )}
-      {(screen === "learn" || screen === "pricing") && (
+      {screen === "learn" && (
         <MissionCourses
-          key={screen + (starterCourse ?? "")}
+          key={starterCourse ?? "catalog"}
           initialCourse={starterCourse}
-          showPro={screen === "pricing"}
           onMission={() => navigate("workspace")}
           onPro={() => navigate("pricing")}
-          onCatalog={() => {
+        />
+      )}
+      {screen === "pricing" && (
+        <main className="mission-course-page">
+          <MissionPro onBack={() => {
             setStarterCourse(undefined);
             navigate("learn");
-          }}
-        />
+          }} />
+        </main>
       )}
       <Dialog
         open={!!dialog}

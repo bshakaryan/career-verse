@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, Code2, FlaskConical, Headphones } from "lucide-react";
-import MissionPro from "./mission-pro";
+import { ArrowLeft, ArrowRight, Code2, FlaskConical, Headphones } from "lucide-react";
+import { ProCourseCards, useProCourseAccess } from "./mission-pro";
 
 const courses = {
   support: {
@@ -54,12 +54,11 @@ const starterLessons = {
 type Props = {
   onMission: () => void;
   onPro: () => void;
-  onCatalog: () => void;
   initialCourse?: CourseId;
-  showPro?: boolean;
 };
 
-export default function MissionCourses({ onMission, onPro, onCatalog, initialCourse, showPro }: Props) {
+export default function MissionCourses({ onMission, onPro, initialCourse }: Props) {
+  const access = useProCourseAccess();
   const [opened, setOpened] = useState<CourseId | null>(initialCourse ?? null);
   const [answer, setAnswer] = useState<number | null>(null);
   const [lessonOpen, setLessonOpen] = useState(Boolean(initialCourse));
@@ -70,8 +69,6 @@ export default function MissionCourses({ onMission, onPro, onCatalog, initialCou
     setLessonOpen(false);
     window.scrollTo({ top: 0 });
   }
-
-  if (showPro) return <main className="mission-course-page"><MissionPro onBack={onCatalog} /></main>;
 
   if (opened) {
     const course = courses[opened];
@@ -110,15 +107,34 @@ export default function MissionCourses({ onMission, onPro, onCatalog, initialCou
     <main className="mission-course-page">
       <span className="mission-kicker">LEARN</span>
       <h1>Build the skills behind each role.</h1>
-      <p className="mission-course-intro">Short beginner courses connected to the work you tried in the BUG-104 mission.</p>
-      <div className="mission-course-grid">
-        {(Object.keys(courses) as CourseId[]).map((id) => {
-          const course = courses[id];
-          const Icon = course.icon;
-          return <article key={id}><span className="mission-course-badge">FREE STARTER LESSON</span><div className="mission-course-icon"><Icon size={24} /></div><h2>{course.title}</h2><p>{course.subtitle}</p><button className="mission-secondary" onClick={() => openCourse(id)}>Open course <ArrowRight size={15} /></button></article>;
-        })}
-      </div>
-      <div className="mission-course-cta"><BookOpen size={20} /><div><b>Ready for more practice?</b><span>Pro includes advanced cases, courses and specialist feedback.</span></div><button className="mission-primary" onClick={onPro}>View Pro plans</button></div>
+      <p className="mission-course-intro">Start with a free lesson or build your skills with Pro courses.</p>
+      <section className="mission-catalog-group" aria-labelledby="free-lessons-heading">
+        <h2 id="free-lessons-heading">Free starter lessons</h2>
+        <div className="mission-course-grid">
+          {(Object.keys(courses) as CourseId[]).map((id) => {
+            const course = courses[id];
+            const Icon = course.icon;
+            return (
+              <article key={id}>
+                <span className="mission-course-badge">FREE</span>
+                <div className="mission-course-icon"><Icon size={24} /></div>
+                <h3>{course.title}</h3>
+                <p>{course.subtitle}</p>
+                <button className="mission-secondary" onClick={() => openCourse(id)}>
+                  Open free lesson <ArrowRight size={15} />
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+      <section className="mission-catalog-group" aria-labelledby="pro-courses-heading">
+        <h2 id="pro-courses-heading">Pro courses</h2>
+        <p className="mission-course-intro">
+          {access.plan ? "Included in your Pro demo access." : "Included with a CareerVerse Pro subscription."}
+        </p>
+        <ProCourseCards access={access} onPricing={onPro} />
+      </section>
       <button className="mission-text" onClick={onMission}>Open the free mission</button>
     </main>
   );

@@ -254,3 +254,28 @@
     grid-template-columns: 1fr;
   }
 }
+.mission-catalog-group {
+  margin-top: 32px;
+}
+.mission-catalog-group > h2 {
+  margin-bottom: 6px;
+}
+.mission-catalog-group > .mission-course-grid,
+.mission-catalog-group > .mission-plan-grid {
+  margin-top: 14px;
+}
+.mission-course-grid h3 {
+  font-size: 18px;
+}
+.mission-pro-badge {
+  background: #eeeaff;
+  color: #4632a2;
+}
+.mission-course-open summary {
+  color: #4632a2;
+  cursor: pointer;
+  font-weight: 700;
+}
+.mission-course-open p {
+  margin: 10px 0;
+}
