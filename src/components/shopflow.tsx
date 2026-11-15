@@ -768,173 +768,225 @@ export default function ShopFlow() {
     const p = practice ? "follow-" : "test-";
     const tests = practice ? state.followupTests : state.tests;
     return (
-      <div className="sf-two-column">
-        <div>
-          <section className="sf-panel">
+      <>
+        {!practice && state.qaTicket && (
+          <section className="sf-panel sf-sandbox-ticket">
             <div className="sf-panel-heading">
               <div>
-                <span className="sf-kicker">
-                  {practice
-                    ? "NEXT PRACTICE · 5–10 MIN"
-                    : "SAFE TEST ENVIRONMENT"}
-                </span>
-                <h2>
-                  {practice ? "The $75 shipping boundary" : "Checkout sandbox"}
-                </h2>
+                <span className="sf-kicker">YOUR QA TICKET · QA-201</span>
+                <h2>{state.qaTicket.title}</h2>
               </div>
-              <FlaskConical size={23} />
+              <div className="sf-ticket-badges">
+                <Badge>{state.qaTicket.status}</Badge>
+                {state.escalation && (
+                  <Badge>{state.escalation.priority} priority</Badge>
+                )}
+              </div>
             </div>
-            <p className="sf-muted">
-              {practice
-                ? "A different defect, the same investigation skills. Free shipping starts at $75. Find where checkout disagrees."
-                : "Test different carts and codes. This is the working checkout logic used by the incident. No real orders are placed."}
-            </p>
-            <fieldset
-              className="sf-form"
-              disabled={busy || (!practice && state.stage !== "qa")}
-            >
-              {input(
-                p + "subtotal",
-                "Merchandise subtotal ($)",
-                practice ? "75.00" : "100.00",
-              )}
-              {!practice && (
-                <>
-                  <label className="sf-field">
-                    Cart category
-                    <select
-                      value={draft[p + "category"] || "apparel"}
-                      onChange={(e) => setDraft(p + "category", e.target.value)}
-                    >
-                      <option value="apparel">Apparel only</option>
-                      <option value="accessories">Accessories only</option>
-                      <option value="mixed">
-                        Mixed: apparel + accessories
-                      </option>
-                    </select>
-                  </label>
-                  {input(p + "promo", "Promotion code", "SAVE20")}
-                </>
-              )}
-              <Button
-                disabled={busy}
-                onClick={async () => {
-                  try {
-                    const subtotal = parseMoney(draft[p + "subtotal"] || "");
-                    await act(
-                      practice
-                        ? { type: "FOLLOWUP_TESTED", subtotal }
-                        : {
-                            type: "CHECKOUT_TESTED",
-                            cart: {
-                              subtotal,
-                              category: (draft[p + "category"] ||
-                                "apparel") as Category,
-                              promo: draft[p + "promo"] || "",
-                            },
-                          },
-                    );
-                  } catch (e) {
-                    setError((e as Error).message);
-                  }
-                }}
-              >
-                Run checkout test <Play size={15} />
-              </Button>
-            </fieldset>
-            {tests.length > 0 && (
-              <div className="sf-checkout-result">
-                <span>CHECKOUT CHARGED</span>
-                <strong>{money(tests.at(-1)!.actual)}</strong>
-                <small>
-                  Test {tests.length} saved as evidence. Compare with
-                  requirements.
-                </small>
+            <div className="sf-sandbox-ticket-body">
+              <div>
+                <strong>Observed symptom</strong>
+                <p>{state.qaTicket.body}</p>
               </div>
-            )}
-            <button
-              className="sf-text-button"
-              onClick={async () => {
-                setSelectedDoc(practice ? "shipping" : "promotion");
-                await act({
-                  type: "READ_DOCUMENT",
-                  id: practice ? "shipping" : "promotion",
-                });
-                goApp("docs");
-              }}
-            >
-              Read {practice ? "shipping" : "promotion"} requirements{" "}
-              <ArrowUpRight size={14} />
+              <div>
+                <strong>Linked customer orders</strong>
+                <div className="sf-sandbox-ticket-orders">
+                  {state.qaTicket.orderIds.length ? (
+                    state.qaTicket.orderIds.map((orderId) => (
+                      <button
+                        className="sf-record-link"
+                        key={orderId}
+                        onClick={() => {
+                          setSelectedOrder(orderId);
+                          goApp("orders", orderId);
+                        }}
+                      >
+                        {orderId} <ArrowUpRight size={13} />
+                      </button>
+                    ))
+                  ) : (
+                    <span className="sf-muted">No orders were linked.</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button className="sf-text-button" onClick={() => goApp("tickets")}>
+              Open full ticket <ArrowRight size={14} />
             </button>
           </section>
-          <section className="sf-panel">
-            <h3>Test history</h3>
-            {tests.length ? (
-              <div className="sf-table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Test</th>
-                      <th>Input</th>
-                      <th>Charged</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tests.map((t, i) => (
-                      <tr key={i}>
-                        <td>#{i + 1}</td>
-                        <td>
-                          {"cart" in t
-                            ? `${money(t.cart.subtotal)} · ${t.cart.category} · ${t.cart.promo || "no promo"}`
-                            : `${money(t.subtotal)} + shipping`}
-                        </td>
-                        <td>{money(t.actual)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="sf-muted">Your test evidence will appear here.</p>
-            )}
-          </section>
-        </div>
-        <div>
-          {practice && (
+        )}
+        <div className="sf-two-column">
+          <div>
             <section className="sf-panel">
-              <BookOpen size={20} />
-              <h3>Your QA assignment</h3>
-              <p>
-                Use the foundation lesson whenever you need a refresher. Your
-                report and tests stay saved.
+              <div className="sf-panel-heading">
+                <div>
+                  <span className="sf-kicker">
+                    {practice
+                      ? "NEXT PRACTICE · 5–10 MIN"
+                      : "SAFE TEST ENVIRONMENT"}
+                  </span>
+                  <h2>
+                    {practice
+                      ? "The $75 shipping boundary"
+                      : "Checkout sandbox"}
+                  </h2>
+                </div>
+                <FlaskConical size={23} />
+              </div>
+              <p className="sf-muted">
+                {practice
+                  ? "A different defect, the same investigation skills. Free shipping starts at $75. Find where checkout disagrees."
+                  : "Test different carts and codes. This is the working checkout logic used by the incident. No real orders are placed."}
               </p>
-              <Button
-                secondary
-                onClick={() => {
-                  setDraft("learn-course", "qa");
-                  navigate("learn");
+              <fieldset
+                className="sf-form"
+                disabled={busy || (!practice && state.stage !== "qa")}
+              >
+                {input(
+                  p + "subtotal",
+                  "Merchandise subtotal ($)",
+                  practice ? "75.00" : "100.00",
+                )}
+                {!practice && (
+                  <>
+                    <label className="sf-field">
+                      Cart category
+                      <select
+                        value={draft[p + "category"] || "apparel"}
+                        onChange={(e) =>
+                          setDraft(p + "category", e.target.value)
+                        }
+                      >
+                        <option value="apparel">Apparel only</option>
+                        <option value="accessories">Accessories only</option>
+                        <option value="mixed">
+                          Mixed: apparel + accessories
+                        </option>
+                      </select>
+                    </label>
+                    {input(p + "promo", "Promotion code", "SAVE20")}
+                  </>
+                )}
+                <Button
+                  disabled={busy}
+                  onClick={async () => {
+                    try {
+                      const subtotal = parseMoney(draft[p + "subtotal"] || "");
+                      await act(
+                        practice
+                          ? { type: "FOLLOWUP_TESTED", subtotal }
+                          : {
+                              type: "CHECKOUT_TESTED",
+                              cart: {
+                                subtotal,
+                                category: (draft[p + "category"] ||
+                                  "apparel") as Category,
+                                promo: draft[p + "promo"] || "",
+                              },
+                            },
+                      );
+                    } catch (e) {
+                      setError((e as Error).message);
+                    }
+                  }}
+                >
+                  Run checkout test <Play size={15} />
+                </Button>
+              </fieldset>
+              {tests.length > 0 && (
+                <div className="sf-checkout-result">
+                  <span>CHECKOUT CHARGED</span>
+                  <strong>{money(tests.at(-1)!.actual)}</strong>
+                  <small>
+                    Test {tests.length} saved as evidence. Compare with
+                    requirements.
+                  </small>
+                </div>
+              )}
+              <button
+                className="sf-text-button"
+                onClick={async () => {
+                  setSelectedDoc(practice ? "shipping" : "promotion");
+                  await act({
+                    type: "READ_DOCUMENT",
+                    id: practice ? "shipping" : "promotion",
+                  });
+                  goApp("docs");
                 }}
               >
-                Back to courses
-              </Button>
+                Read {practice ? "shipping" : "promotion"} requirements{" "}
+                <ArrowUpRight size={14} />
+              </button>
             </section>
-          )}
-          {practice ||
-          state.reports.length > 0 ||
-          (state.tests.some((test) => test.actual !== test.expected) &&
-            state.tests.some((test) => test.actual === test.expected)) ? (
-            reportForm(practice)
-          ) : (
             <section className="sf-panel">
-              <h3>Next: your engineering handoff</h3>
-              <p>
-                Run a failing test and a passing control to open your bug
-                report. You’ll use those results as evidence.
-              </p>
+              <h3>Test history</h3>
+              {tests.length ? (
+                <div className="sf-table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Test</th>
+                        <th>Input</th>
+                        <th>Charged</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tests.map((t, i) => (
+                        <tr key={i}>
+                          <td>#{i + 1}</td>
+                          <td>
+                            {"cart" in t
+                              ? `${money(t.cart.subtotal)} · ${t.cart.category} · ${t.cart.promo || "no promo"}`
+                              : `${money(t.subtotal)} + shipping`}
+                          </td>
+                          <td>{money(t.actual)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="sf-muted">Your test evidence will appear here.</p>
+              )}
             </section>
-          )}
+          </div>
+          <div>
+            {practice && (
+              <section className="sf-panel">
+                <BookOpen size={20} />
+                <h3>Your QA assignment</h3>
+                <p>
+                  Use the foundation lesson whenever you need a refresher. Your
+                  report and tests stay saved.
+                </p>
+                <Button
+                  secondary
+                  onClick={() => {
+                    setDraft("learn-course", "qa");
+                    navigate("learn");
+                  }}
+                >
+                  Back to courses
+                </Button>
+              </section>
+            )}
+            {practice ||
+            state.reports.length > 0 ||
+            (state.tests.some((test) => test.actual !== test.expected) &&
+              state.tests.some((test) => test.actual === test.expected)) ? (
+              reportForm(practice)
+            ) : (
+              <section className="sf-panel">
+                <h3>Next: your engineering handoff</h3>
+                <p>
+                  Run a failing test and a passing control to open your bug
+                  report. You’ll use those results as evidence.
+                </p>
+              </section>
+            )}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
   function openEscalation(orderId: string) {

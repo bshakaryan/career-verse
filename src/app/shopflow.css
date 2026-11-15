@@ -2594,3 +2594,46 @@
 .sf-ticket-panel > .sf-button {
   margin: 16px 12px 0 0;
 }
+.sf-sandbox-ticket {
+  margin-bottom: 20px;
+  border-color: #d9cff7;
+  background: linear-gradient(135deg, #fbf9ff, #f6f2ff);
+}
+.sf-sandbox-ticket .sf-panel-heading {
+  align-items: flex-start;
+}
+.sf-sandbox-ticket .sf-ticket-badges {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.sf-sandbox-ticket-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(220px, 0.7fr);
+  gap: 24px;
+  margin: 18px 0;
+}
+.sf-sandbox-ticket-body strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+}
+.sf-sandbox-ticket-body p {
+  margin: 0;
+  color: #5f586b;
+  line-height: 1.65;
+}
+.sf-sandbox-ticket-orders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 800px) {
+  .sf-sandbox-ticket .sf-panel-heading,
+  .sf-sandbox-ticket-body {
+    grid-template-columns: 1fr;
+  }
+  .sf-sandbox-ticket .sf-panel-heading {
+    display: grid;
+    gap: 12px;
+  }
+}
