@@ -17,11 +17,16 @@ import {
   TicketCheck,
 } from "lucide-react";
 import {
-  initialMission, readMission, simulateCheckout, ticketDefaults,
+  defaultHandoff, initialMission, readMission, simulateCheckout, ticketDefaults,
   type MissionState, type Phase, type TestCase,
 } from "@/lib/shopflow/mission";
 
 const storageKey = "careerverse-one-bug-mission";
+const checkoutTests = {
+  single: { label: "Single click", expected: "1 payment starts" },
+  repeat: { label: "Rapid double-click", expected: "1 payment starts" },
+  retry: { label: "Retry after decline", expected: "1 successful retry" },
+};
 const roleSteps = [
   { label: "Support", icon: Headphones },
   { label: "Developer", icon: Code2 },
@@ -70,11 +75,13 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
   const [feedback, setFeedback] = useState("");
   const [file, setFile] = useState<"checkout" | "payment">("checkout");
   const [testCase, setTestCase] = useState<TestCase>("single");
+  const [declined, setDeclined] = useState(false);
   const [interest, setInterest] = useState("");
-  const { phase, asked, ticket, reproduced, patch, previewPassed, qaReported, qaResults } = mission;
+  const { phase, asked, ticket, reproduced, patch, previewPassed, qaReported, qaResults, handoff, reply } = mission;
   const activeRole = stepFor(phase);
-  const allTestsRun = qaResults.single !== undefined && qaResults.repeat !== undefined;
-  const allTestsPassed = qaResults.single === 1 && qaResults.repeat === 1;
+  const requiredTests: TestCase[] = patch === "guarded" ? ["single", "repeat", "retry"] : ["single", "repeat"];
+  const allTestsRun = requiredTests.every((test) => qaResults[test] !== undefined);
+  const allTestsPassed = requiredTests.every((test) => qaResults[test] === 1);
 
   function update(change: Partial<MissionState>) {
     setMission((current) => ({ ...current, ...change }));
@@ -110,13 +117,20 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
     setInterest("");
     setFile("checkout");
     setTestCase("single");
+    setDeclined(false);
   }
   function runTest() {
-    const qaResults = { ...mission.qaResults, [testCase]: simulateCheckout(patch, testCase) };
+    if (testCase === "retry" && !declined) {
+      setDeclined(true);
+      return;
+    }
+    const result = simulateCheckout(patch, testCase === "retry" ? "single" : testCase);
+    const qaResults = { ...mission.qaResults, [testCase]: result };
+    setDeclined(false);
     setFeedback("");
     update({
       qaResults,
-      phase: qaResults.single !== undefined && qaResults.repeat !== undefined ? "qa-decision" : "qa",
+      phase: requiredTests.every((test) => qaResults[test] !== undefined) ? "qa-decision" : "qa",
     });
   }
 
@@ -191,8 +205,8 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
               {phase === "ticket" && (
                 <form className="ticket-form" onSubmit={(event) => {
                   event.preventDefault();
-                  if (!ticket.summary.trim() || !ticket.evidence.trim()) {
-                    setFeedback("Add a short title and what the customer saw.");
+                  if (!ticket.summary.trim() || !ticket.evidence.trim() || !ticket.expected.trim()) {
+                    setFeedback("Add a title, what happened and what should happen.");
                   } else if (ticket.priority !== "High") {
                     setFeedback("Choose High because the customer cannot complete their purchase.");
                   } else {
@@ -204,9 +218,13 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
                     <input required maxLength={100} value={ticket.summary}
                       onChange={(event) => update({ ticket: { ...ticket, summary: event.target.value } })} />
                   </label>
-                  <label>Customer evidence
+                  <label>What happened
                     <textarea required rows={2} maxLength={240} value={ticket.evidence}
                       onChange={(event) => update({ ticket: { ...ticket, evidence: event.target.value } })} />
+                  </label>
+                  <label>What should happen
+                    <input required maxLength={160} value={ticket.expected}
+                      onChange={(event) => update({ ticket: { ...ticket, expected: event.target.value } })} />
                   </label>
                   <div className="ticket-fields">
                     <label>Priority
@@ -238,7 +256,7 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
         <section className="role-workspace developer-workspace">
           <Guidance role="a Software Developer">
             {phase === "developer" ? "Try the checkout to see what Maya reported."
-              : phase === "fix-applied" ? "Try your change in preview before sending it to QA."
+              : phase === "fix-applied" ? (previewPassed ? "Tell QA what changed and what to check." : "Try your change in preview before sending it to QA.")
               : qaReported ? "QA found two payment attempts. Stop the second click while the first payment runs."
               : "Compare the checkout button with the payment file. What should happen when you click?"}
           </Guidance>
@@ -283,7 +301,11 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
                     }
                     setFile("checkout");
                     setFeedback("The button now calls pay. Run a preview to check it.");
-                    update({ patch: "connected", phase: "fix-applied" });
+                    update({
+                      patch: "connected",
+                      handoff: defaultHandoff("connected"),
+                      phase: "fix-applied",
+                    });
                   }}>Connect Pay Now to the payment action</button>
                   <button onClick={() => {
                     if (!qaReported) {
@@ -292,7 +314,11 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
                     }
                     setFile("checkout");
                     setFeedback("The button is now disabled while the payment runs.");
-                    update({ patch: "guarded", phase: "fix-applied" });
+                    update({
+                      patch: "guarded",
+                      handoff: defaultHandoff("guarded"),
+                      phase: "fix-applied",
+                    });
                   }}>Disable Pay Now while a payment runs</button>
                 </div>
               )}
@@ -305,7 +331,8 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
                 <div><dt>Status</dt><dd>{phase === "developer" ? "Open" : phase === "fix-applied" && previewPassed ? "Ready for Testing" : "In Progress"}</dd></div>
                 <div><dt>Priority</dt><dd>{ticket.priority}</dd></div>
               </dl>
-              <small>{ticket.evidence}</small>
+              <small><strong>What happened</strong><br />{ticket.evidence}</small>
+              <small><strong>What should happen</strong><br />{ticket.expected}</small>
               {qaReported && <p className="mission-feedback">QA report · Rapid double-click started 2 payments. Expected 1.</p>}
               {phase === "developer" && (
                 reproduced ? (
@@ -324,10 +351,21 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
                 previewPassed ? (
                   <>
                     <p className="mission-feedback">Preview · 1 payment started.</p>
-                    <button className="mission-primary" onClick={() => {
+                    <form className="mission-handoff-form" onSubmit={(event) => {
+                      event.preventDefault();
+                      if (!handoff.trim()) return;
                       setTestCase("single");
+                      setDeclined(false);
                       setPhase("qa");
-                    }}>Send to QA <Send size={16} /></button>
+                    }}>
+                      <label>Note for QA
+                        <textarea required rows={4} maxLength={240} value={handoff}
+                          onChange={(event) => update({ handoff: event.target.value })} />
+                      </label>
+                      <button className="mission-primary" type="submit" disabled={!handoff.trim()}>
+                        Send to QA <Send size={16} />
+                      </button>
+                    </form>
                   </>
                 ) : (
                   <button className="mission-primary" onClick={() => {
@@ -345,8 +383,9 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
         <section className="role-workspace qa-workspace">
           <Guidance role="a QA Tester">
             {phase === "qa-approved" ? "Share the approved test results with Support."
-              : allTestsPassed ? "Both cases started one payment. Approve the fix."
+              : allTestsPassed ? "The checkout passed every test. Review the results and approve the fix."
               : allTestsRun ? "Compare expected and actual results. Send the failing case back to the developer."
+              : patch === "guarded" ? "Check normal and rapid clicks again. Then try paying after a decline."
               : "Try a normal payment and two fast clicks. Each test should start just one payment."}
           </Guidance>
           <div className="qa-grid">
@@ -354,6 +393,8 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
               <span className="mission-kicker">BUG-104</span>
               <h3>{ticket.summary}</h3>
               <p>{ticket.evidence}</p>
+              <div className="qa-meta"><span>Expected checkout behavior</span><b>{ticket.expected}</b></div>
+              {handoff && <div className="qa-meta"><span>Developer note</span><b>{handoff}</b></div>}
               <div className="qa-meta"><span>Build</span><b>{patch === "guarded" ? "2 · Button locks during payment" : "1 · Button starts payment"}</b></div>
               <div className="qa-meta"><span>Status</span><b>{phase === "qa-approved" ? "QA Approved" : "Ready for Testing"}</b></div>
             </aside>
@@ -363,14 +404,18 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
                 <div className="plan-icon"><CreditCard size={24} /></div>
                 <h2>Premium Plan</h2>
                 <strong>$19 <small>/ month</small></strong>
-                {phase !== "qa-approved" && (
+                {phase !== "qa-approved" && (testCase !== "retry" || qaResults.retry === undefined) && (
                   <button className="pay-button" onClick={runTest}>
-                    {testCase === "single" ? "Pay Now" : "Simulate two quick clicks"}
+                    {testCase === "single" ? "Pay Now"
+                      : testCase === "repeat" ? "Simulate two quick clicks"
+                      : declined ? "Retry with approved test card" : "Pay with declined test card"}
                   </button>
                 )}
                 <p className="mission-test-output" role="status">
-                  {qaResults[testCase] === undefined
+                  {testCase === "retry" && declined ? "Payment declined. No charge. You can try again."
+                    : qaResults[testCase] === undefined
                     ? "No payment attempted in this test."
+                    : testCase === "retry" ? (qaResults.retry === 1 ? "Retry successful · 1 payment" : "Retry failed · No payment")
                     : `Payments started: ${qaResults[testCase]}`}
                 </p>
               </div>
@@ -378,15 +423,15 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
             <aside className="test-runner">
               <span className="mission-kicker">CHECKOUT TESTS</span>
               <ul className="mission-test-list">
-                {(["single", "repeat"] as const).map((id) => {
+                {requiredTests.map((id) => {
                   const actual = qaResults[id];
-                  const label = id === "single" ? "Single click" : "Rapid double-click";
+                  const test = checkoutTests[id];
                   return (
                     <li key={id}>
                       <button className="mission-secondary" aria-pressed={testCase === id} onClick={() => setTestCase(id)}>
-                        {label}
+                        {test.label}
                       </button>
-                      <p>Expected · 1 payment</p>
+                      <p>Expected · {test.expected}</p>
                       <p className={actual === undefined ? "" : actual === 1 ? "test-pass" : "test-fail"}>
                         {actual === undefined ? "Not run" : `Actual · ${actual} · ${actual === 1 ? "Passed" : "Failed"}`}
                       </p>
@@ -394,7 +439,7 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
                   );
                 })}
               </ul>
-              {phase === "qa-decision" && (
+              {phase !== "qa-approved" && allTestsRun && (
                 allTestsPassed ? (
                   <button className="mission-primary" onClick={() => setPhase("qa-approved")}>Approve fix <Check size={16} /></button>
                 ) : (
@@ -417,13 +462,34 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
         <section className="role-workspace support-workspace resolution-workspace">
           <Guidance role="Customer Support">The bug is fixed and tested. Let the customer know!</Guidance>
           <div className="resolution-grid">
-            <article className="customer-chat"><header><span className="customer-avatar">MB</span><div><b>Maya Brooks</b><small>Customer</small></div><span className="open-status">Open</span></header><div className="customer-bubble">Hi! I’m trying to pay for my order, but the Pay button doesn’t do anything. Can you help?</div><div className="reply-draft"><span>READY TO SEND</span><p>Hi! Our team has fixed the payment issue. You can now complete your purchase. Thanks for your patience!</p></div><button className="mission-primary" onClick={() => setPhase("complete")}>Send Reply &amp; Close Ticket <Send size={16} /></button></article>
+            <article className="customer-chat">
+              <header>
+                <span className="customer-avatar">MB</span>
+                <div><b>Maya Brooks</b><small>Customer</small></div>
+                <span className="open-status">Open</span>
+              </header>
+              <div className="customer-bubble">
+                Hi! I’m trying to pay for my order, but the Pay button doesn’t do anything. Can you help?
+              </div>
+              <form className="reply-draft mission-reply-form" onSubmit={(event) => {
+                event.preventDefault();
+                if (reply.trim()) setPhase("complete");
+              }}>
+                <label>Reply to Maya
+                  <textarea required rows={3} maxLength={320} value={reply}
+                    onChange={(event) => update({ reply: event.target.value })} />
+                </label>
+                <button className="mission-primary" type="submit" disabled={!reply.trim()}>
+                  Send Reply &amp; Close Ticket <Send size={16} />
+                </button>
+              </form>
+            </article>
             <aside className="resolution-status">
               <span className="success-icon"><Check size={24} /></span>
               <span className="mission-kicker">BUG-104</span>
               <h2>Fixed &amp; Tested</h2>
               <div><Code2 size={17} /><span>Developer<b>Fix completed</b></span><Check size={17} /></div>
-              <div><FlaskConical size={17} /><span>QA Tester<b>{allTestsPassed ? "Single and double-click tests passed" : "Tests passed"}</b></span><Check size={17} /></div>
+              <div><FlaskConical size={17} /><span>QA Tester<b>{qaResults.retry === 1 ? "Normal, double-click and retry tests passed" : "Tests passed"}</b></span><Check size={17} /></div>
             </aside>
           </div>
         </section>

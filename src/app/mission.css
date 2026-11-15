@@ -138,3 +138,39 @@
     display: none;
   }
 }
+.mission-handoff-form,
+.mission-reply-form {
+  display: grid;
+  gap: 10px;
+}
+.mission-handoff-form label,
+.mission-reply-form label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.mission-handoff-form textarea,
+.mission-reply-form textarea {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #d9d4eb;
+  border-radius: 7px;
+  background: white;
+  color: #302c3b;
+  font-size: 13px;
+  font-weight: 400;
+  resize: vertical;
+}
+.mission-shell .mission-handoff-form .mission-primary {
+  margin-top: 0;
+}
+.mission-reply-form .mission-primary {
+  justify-self: end;
+}
+.mission-shell .dev-ticket > small + small {
+  margin-top: 6px;
+}
+.mission-shell .qa-meta b {
+  overflow-wrap: anywhere;
+}
