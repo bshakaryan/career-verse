@@ -4,9 +4,16 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
 const plans = [
-  { id: "monthly", title: "Monthly", price: "$20", period: "month", detail: "Billed monthly" },
-  { id: "yearly", title: "Yearly", price: "$100", period: "year", detail: "Save $140 compared with 12 monthly payments" },
+  { id: "monthly", title: "Monthly", price: 29, period: "month", detail: "Billed monthly" },
+  { id: "yearly", title: "Yearly", price: 290, period: "year", detail: "Billed annually" },
 ] as const;
+const annualSavings = plans[0].price * 12 - plans[1].price;
+const planBenefits = [
+  "Advanced practice cases",
+  "Pro courses",
+  "Learning progress tracking",
+  "Specialist feedback on submitted work",
+];
 type Plan = (typeof plans)[number]["id"];
 type View = "plans" | "library" | "case" | "courses" | "review";
 
@@ -118,15 +125,23 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
     <>
       <button className="mission-course-back" onClick={onBack}><ArrowLeft size={15} /> Back to Learn</button>
       <h1>CareerVerse Pro</h1>
-      <p className="mission-course-intro">Both plans include advanced cases, courses and progress tracking, and feedback from a specialist on submitted work.</p>
-      <p className="mission-demo-note">MVP demo · Plan selection unlocks a preview. No payment is collected. Specialist feedback is shown as an example.</p>
-      <div className="mission-plan-grid">
+      <div className="mission-plan-grid mission-pricing-grid">
         {plans.map((item) => (
-          <article className="mission-pro-card" key={item.id}>
-            <h2>{item.title}</h2>
-            <p className="mission-plan-price">{item.price} <small>/ {item.period}</small></p>
-            <p>{item.detail}</p>
-            <button className="mission-primary" onClick={() => {
+          <article className={`mission-pro-card mission-pricing-card ${item.id === "yearly" ? "mission-pricing-yearly" : ""}`} key={item.id}>
+            <div className="mission-pricing-card-title">
+              <h2>{item.title}</h2>
+              {item.id === "yearly" && <span>Save ${annualSavings} a year</span>}
+            </div>
+            <div>
+              <p className="mission-plan-price">${item.price} <small>/ {item.period}</small></p>
+              <p className="mission-pricing-billing">{item.detail}</p>
+            </div>
+            <ul className="mission-pricing-benefits" role="list">
+              {planBenefits.map((benefit) => (
+                <li key={benefit}><Check size={16} aria-hidden="true" /> {benefit}</li>
+              ))}
+            </ul>
+            <button className={item.id === "yearly" ? "mission-primary" : "mission-secondary"} onClick={() => {
               access.selectPlan(item.id);
               changeView("library");
             }}>{plan === item.id ? "Open Pro workspace" : `Try ${item.title.toLowerCase()} demo`} <ArrowRight size={16} /></button>
@@ -145,7 +160,7 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
       {view === "library" && (
         <>
           <h1>Your Pro workspace</h1>
-          <p>{active.title} demo · {active.price}/{active.period}</p>
+          <p>{active.title} demo · ${active.price}/{active.period}</p>
           <p className="mission-course-intro">Your case and course progress is saved on this device.</p>
           <div className="mission-pro-library">
             <article className="mission-pro-card">

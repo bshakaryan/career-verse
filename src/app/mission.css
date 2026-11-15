@@ -217,6 +217,67 @@
   color: #6f687e;
   font-size: 13px;
 }
+.mission-pricing-grid {
+  max-width: 850px;
+  gap: 20px;
+}
+.mission-pricing-card {
+  gap: 18px;
+  padding: clamp(22px, 4vw, 32px);
+  border-radius: 18px;
+}
+.mission-pricing-yearly {
+  border-color: #a99bf1;
+  background: linear-gradient(150deg, #f0ecff, white 55%);
+  box-shadow: 0 10px 26px #6953e719;
+}
+.mission-pricing-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mission-pricing-card-title span {
+  padding: 4px 10px;
+  border-radius: 50px;
+  background: #e8e0ff;
+  color: #4934a5;
+  font-size: 12px;
+  font-weight: 700;
+}
+.mission-pricing-card .mission-plan-price {
+  color: #282637;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+.mission-pricing-card .mission-plan-price small {
+  letter-spacing: normal;
+}
+.mission-pricing-billing {
+  margin-top: 5px;
+  color: #6f687e;
+}
+.mission-pricing-benefits {
+  display: grid;
+  gap: 11px;
+  padding: 18px 0 0;
+  margin: 0;
+  border-top: 1px solid #e6e3ed;
+  list-style: none;
+}
+.mission-pricing-benefits li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.mission-pricing-benefits svg {
+  align-self: flex-start;
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #5b46c6;
+}
 .mission-demo-note {
   margin-top: 16px;
   padding: 12px 16px;
