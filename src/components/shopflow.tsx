@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 import CareerVerse from "./careerverse";
 import MissionExperience from "./mission-experience";
-import MissionCourses from "./mission-courses";
+import MissionCourses, { type CourseId } from "./mission-courses";
 import { nextGuide, type Guide } from "@/lib/shopflow/guide";
 import {
   orders,
@@ -176,6 +176,7 @@ export default function ShopFlow() {
   const progressRef = useRef(progress);
   const [ready, setReady] = useState(false);
   const [screen, setScreen] = useState<Screen>("home");
+  const [starterCourse, setStarterCourse] = useState<CourseId>();
   const [app, setApp] = useState<App>("inbox");
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -2198,8 +2199,11 @@ export default function ShopFlow() {
             My experience
           </button>
           <button
-            aria-current={screen === "learn" ? "page" : undefined}
-            onClick={() => navigate("learn")}
+            aria-current={screen === "learn" || screen === "pricing" ? "page" : undefined}
+            onClick={() => {
+              setStarterCourse(undefined);
+              navigate("learn");
+            }}
           >
             Learn
           </button>
@@ -2260,7 +2264,10 @@ export default function ShopFlow() {
       {screen === "workspace" && (
         <MissionExperience
           onHome={() => navigate("home")}
-          onLearn={() => navigate("learn")}
+          onLearn={(course) => {
+            setStarterCourse(course);
+            navigate("learn");
+          }}
         />
       )}
       {state && false && screen === "workspace" && (
@@ -2477,84 +2484,18 @@ export default function ShopFlow() {
           <Button onClick={() => setDialog("intro")}>Start the incident</Button>
         </main>
       )}
-      {screen === "learn" && (
-        <MissionCourses onMission={() => navigate("workspace")} />
-      )}
-      {screen === "pricing" && (
-        <main className="sf-page sf-pricing">
-          <span className="sf-kicker">KEEP EXPLORING</span>
-          <h1>Try the work. Then choose your next step.</h1>
-          <p className="sf-page-intro">
-            Try both professions, learn the foundations and complete new
-            assignments for free. Pro adds the double-refund incident. The
-            proposed price is $29/month; demo access is free and no payment is
-            collected.
-          </p>
-          <div className="sf-pricing-grid">
-            <section className="sf-panel">
-              <Badge>CAREER EXPLORER</Badge>
-              <h2>
-                Free <small>forever for this demo</small>
-              </h2>
-              <ul>
-                {[
-                  "The complete Checkout Crisis",
-                  "Customer Support + QA perspectives",
-                  "Evidence-based career comparison",
-                  "Support and QA foundation lessons",
-                  "Refund and shipping-boundary assignments",
-                  "Saved progress and work record export",
-                ].map((t) => (
-                  <li key={t}>
-                    <Check size={16} />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-              <Button
-                secondary
-                onClick={() =>
-                  run ? navigate("workspace") : setDialog("intro")
-                }
-              >
-                {run ? "Continue free practice" : "Start free"}
-                <ArrowRight size={16} />
-              </Button>
-            </section>
-            <section className="sf-panel sf-pro-plan">
-              <Badge tone="purple">CAREERVERSE PRO · PROPOSED</Badge>
-              <h2>
-                $29 <small>/ month</small>
-              </h2>
-              <p className="sf-muted">
-                Available now through demo access. More course modules are
-                planned.
-              </p>
-              <ul>
-                {[
-                  "The playable double-refund incident",
-                  "Payment ownership and reconciliation lesson",
-                  "Knowledge checks with explanations",
-                  "Financial consequences for every decision",
-                  "Saved attempts and revision comparisons",
-                  "Additional course modules — planned",
-                ].map((t) => (
-                  <li key={t}>
-                    <Check size={16} />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-              <Button onClick={() => setDialog("upgrade")}>
-                {progress.demoPro
-                  ? "Manage demo access"
-                  : "Try simulated upgrade"}
-                <ArrowRight size={16} />
-              </Button>
-              <small>No checkout. No card. No charge.</small>
-            </section>
-          </div>
-        </main>
+      {(screen === "learn" || screen === "pricing") && (
+        <MissionCourses
+          key={screen + (starterCourse ?? "")}
+          initialCourse={starterCourse}
+          showPro={screen === "pricing"}
+          onMission={() => navigate("workspace")}
+          onPro={() => navigate("pricing")}
+          onCatalog={() => {
+            setStarterCourse(undefined);
+            navigate("learn");
+          }}
+        />
       )}
       <Dialog
         open={!!dialog}
@@ -2715,7 +2656,7 @@ export default function ShopFlow() {
                 <Description>
                   {progress.demoPro
                     ? "Your demo access includes the playable double-refund incident, its lesson and knowledge checks. Your free lessons remain available."
-                    : "This tests the upgrade flow for a proposed $29/month subscription. No card details are requested and no money is charged."}
+                    : "Try Pro practice in demo mode. No card details are requested and no money is charged."}
                 </Description>
                 <div className="sf-notice">
                   Reconcile three customer accounts, cancel a pending duplicate

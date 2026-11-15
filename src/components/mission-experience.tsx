@@ -16,12 +16,18 @@ import {
   Sparkles,
   TicketCheck,
 } from "lucide-react";
+import type { CourseId } from "./mission-courses";
 import {
   defaultHandoff, initialMission, readMission, simulateCheckout, ticketDefaults,
   type MissionState, type Phase, type TestCase,
 } from "@/lib/shopflow/mission";
 
 const storageKey = "careerverse-one-bug-mission";
+const starterRoles = [
+  { id: "support", label: "Customer Support" },
+  { id: "developer", label: "Software Developer" },
+  { id: "qa", label: "QA Tester" },
+] as const;
 const checkoutTests = {
   single: { label: "Single click", expected: "1 payment starts" },
   repeat: { label: "Rapid double-click", expected: "1 payment starts" },
@@ -69,14 +75,14 @@ function Progress({ phase }: { phase: Phase }) {
   );
 }
 
-export default function MissionExperience({ onHome, onLearn }: { onHome: () => void; onLearn: () => void }) {
+export default function MissionExperience({ onHome, onLearn }: { onHome: () => void; onLearn: (course?: CourseId) => void }) {
   const [mission, setMission] = useState<MissionState>(initialMission);
   const [loaded, setLoaded] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [file, setFile] = useState<"checkout" | "payment">("checkout");
   const [testCase, setTestCase] = useState<TestCase>("single");
   const [declined, setDeclined] = useState(false);
-  const [interest, setInterest] = useState("");
+  const [interest, setInterest] = useState<CourseId>();
   const { phase, asked, ticket, reproduced, patch, previewPassed, qaReported, qaResults, handoff, reply } = mission;
   const activeRole = stepFor(phase);
   const requiredTests: TestCase[] = patch === "guarded" ? ["single", "repeat", "retry"] : ["single", "repeat"];
@@ -114,7 +120,7 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
   function reset() {
     setMission(initialMission);
     setFeedback("");
-    setInterest("");
+    setInterest(undefined);
     setFile("checkout");
     setTestCase("single");
     setDeclined(false);
@@ -499,8 +505,24 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
         <section className="mission-complete">
           <span className="complete-mark"><Check size={30} /></span><span className="mission-kicker">MISSION COMPLETE</span><h1>You just experienced how an IT team works.</h1><p>Reply sent to Maya · BUG-104 resolved</p>
           <div className="complete-roles"><article><Headphones size={22} /><h3>Customer Support</h3><p>You helped the customer and sent a clear issue to the team.</p></article><article><Code2 size={22} /><h3>Software Developer</h3><p>You found the right change and fixed the broken button.</p></article><article><FlaskConical size={22} /><h3>QA Tester</h3><p>You tested the fix before it reached the customer.</p></article></div>
-          <div className="interest-choice"><b>Which role felt most interesting to you?</b><div>{["Customer Support", "Software Developer", "QA Tester"].map((role) => <button className={interest === role ? "selected" : ""} onClick={() => setInterest(role)} key={role}>{role}</button>)}</div>{interest && <p><Sparkles size={16} /> Great choice. You can explore a short {interest} course next.</p>}</div>
-          <div className="complete-actions"><button className="mission-primary" onClick={onLearn}>Explore courses <ArrowRight size={17} /></button><button className="mission-secondary" onClick={reset}>Try again</button><button className="mission-text" onClick={onHome}>Back to Explore</button></div>
+          <div className="interest-choice">
+            <b>Which role would you like to explore?</b>
+            <div>{starterRoles.map((role) => (
+              <button
+                className={interest === role.id ? "selected" : ""}
+                aria-pressed={interest === role.id}
+                onClick={() => setInterest(role.id)}
+                key={role.id}
+              >{role.label}</button>
+            ))}</div>
+          </div>
+          <div className="complete-actions">
+            <button className="mission-primary" onClick={() => onLearn(interest)}>
+              {interest ? "Start your first lesson" : "Explore courses"} <ArrowRight size={17} />
+            </button>
+            <button className="mission-secondary" onClick={reset}>Try again</button>
+            <button className="mission-text" onClick={onHome}>Back to Explore</button>
+          </div>
         </section>
       )}
     </main>

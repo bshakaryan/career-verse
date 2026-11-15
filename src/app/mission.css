@@ -174,3 +174,83 @@
 .mission-shell .qa-meta b {
   overflow-wrap: anywhere;
 }
+.mission-course-page {
+  --mission-purple: #6953e7;
+  --mission-purple-dark: #523cc6;
+}
+.mission-course-page > .mission-course-back {
+  margin-bottom: 20px;
+}
+.mission-course-page .mission-primary,
+.mission-course-page .mission-secondary {
+  min-height: 42px;
+}
+.mission-plan-grid,
+.mission-pro-library {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.mission-pro-library {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.mission-pro-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid #e6e3ed;
+  border-radius: 14px;
+  background: white;
+}
+.mission-pro-card h2,
+.mission-pro-stack h2 {
+  font-size: 17px;
+}
+.mission-plan-price {
+  color: #4632a2;
+  font-size: 32px;
+  font-weight: 800;
+}
+.mission-plan-price small {
+  color: #6f687e;
+  font-size: 13px;
+}
+.mission-demo-note {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 9px;
+  background: #eeeaff;
+  color: #514379;
+}
+.mission-pro-stack {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-top: 20px;
+}
+.mission-pro-stack > article,
+.mission-pro-stack > label {
+  width: 100%;
+}
+.mission-pro-stack textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid #d9d4eb;
+  border-radius: 8px;
+  resize: vertical;
+}
+.mission-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 760px) {
+  .mission-plan-grid,
+  .mission-pro-library {
+    grid-template-columns: 1fr;
+  }
+}
