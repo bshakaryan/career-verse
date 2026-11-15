@@ -1199,7 +1199,7 @@ export default function ShopFlow() {
                   onClick={async () => {
                     setSelectedOrder(o.id);
                     await act({ type: "ORDER_INSPECTED", id: o.id });
-                    goApp("orders");
+                    goApp("orders", o.id);
                   }}
                 >
                   Inspect order {o.id} <ArrowRight size={16} />
@@ -1328,6 +1328,7 @@ export default function ShopFlow() {
                           disabled={busy}
                           onClick={async () => {
                             setSelectedOrder(order.id);
+                            goApp("orders", order.id);
                             await act({
                               type: "ORDER_INSPECTED",
                               id: order.id,
