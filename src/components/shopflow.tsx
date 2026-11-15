@@ -96,6 +96,17 @@ const apps = [
 ] as const;
 const clock = (minutes: number) =>
   `${String(9 + Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+function customerReplyTemplate(customer: string, orderId: string) {
+  const firstName = customer.split(" ")[0];
+  return `Hello ${firstName},
+
+Thank you for contacting ShopFlow about order ${orderId}.
+
+[Describe what you found, the refund amount, and what happens next.]
+
+Best,
+ShopFlow Support`;
+}
 function parseMoney(value: string) {
   if (!/^\d+(\.\d{1,2})?$/.test(value.trim()))
     throw new Error(
@@ -567,14 +578,20 @@ export default function ShopFlow() {
       )}
     </label>
   );
-  const textarea = (key: string, label: string, placeholder = "", rows = 4) => (
+  const textarea = (
+    key: string,
+    label: string,
+    placeholder = "",
+    rows = 4,
+    initialValue = "",
+  ) => (
     <label className="sf-field">
       {label}
       <textarea
         id={key}
         aria-label={label}
         aria-describedby={fieldHelp(key) ? `${key}-help` : undefined}
-        value={draft[key] || ""}
+        value={draft[key] ?? initialValue}
         placeholder={placeholder}
         rows={rows}
         maxLength={3000}
@@ -1217,7 +1234,9 @@ export default function ShopFlow() {
                     {textarea(
                       `reply-${o.id}`,
                       "Your response",
-                      "Include the order ID, verified refund amount (two decimals), and the next step.",
+                      "",
+                      7,
+                      customerReplyTemplate(o.customer, o.id),
                     )}
                     <Button
                       disabled={busy || state.refunds[o.id] === undefined}
@@ -1225,7 +1244,9 @@ export default function ShopFlow() {
                         act({
                           type: "CUSTOMER_REPLIED",
                           id: o.id,
-                          text: draft[`reply-${o.id}`] || "",
+                          text:
+                            draft[`reply-${o.id}`] ??
+                            customerReplyTemplate(o.customer, o.id),
                         })
                       }
                     >
