@@ -304,6 +304,85 @@
   border-radius: 8px;
   resize: vertical;
 }
+.pro-practice { margin-top: 28px; line-height: 1.55; }
+.pro-case-heading { display: flex; justify-content: space-between; align-items: start; gap: 20px; }
+.pro-case-heading h1 { margin: 8px 0; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; line-height: 1.1; }
+.pro-case-heading p, .pro-muted { color: #6f687e; font-size: 13px; }
+.pro-status { flex-shrink: 0; padding: 6px 12px; border-radius: 30px; color: #5b46b1; background: #eeeaff; font-size: 12px; }
+.pro-brief { padding: 20px 24px; margin: 24px 0; border-left: 3px solid #8066db; border-radius: 0 12px 12px 0; background: #f1edfc; }
+.pro-brief b { font-size: 19px; }
+.pro-brief p { margin-top: 6px; color: #625774; }
+.pro-step-nav { display: flex; gap: 6px; margin-bottom: 20px; padding: 5px; background: #eeebf3; border-radius: 12px; }
+.pro-step-nav button { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; padding: 12px; border: 0; border-radius: 8px; background: transparent; color: #6f687e; font-weight: 600; }
+.pro-step-nav button[aria-current] { color: #5137ac; background: white; box-shadow: 0 2px 6px #30204e12; }
+.pro-case-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.pro-practice .mission-pro-card { padding: 26px; gap: 16px; }
+.pro-practice .mission-pro-card h2 { font-size: 22px; letter-spacing: -.02em; }
+.pro-facts { display: grid; gap: 0; margin: 0; font-size: 14px; }
+.pro-facts div { display: flex; justify-content: space-between; gap: 20px; padding: 10px 0; border-bottom: 1px solid #eeebf3; }
+.pro-facts dt { color: #777080; }
+.pro-facts dd { margin: 0; text-align: right; font-weight: 600; }
+.pro-actions { display: grid; gap: 8px; }
+.pro-actions button { justify-content: center; }
+.pro-action-receipt { padding: 10px 12px; background: #f5f1fc; border-radius: 8px; font-size: 13px; color: #64517b; }
+.pro-refund { border-top: 1px solid #eae5f2; padding-top: 14px; }
+.pro-refund summary, .pro-history summary { cursor: pointer; color: #655098; font-weight: 600; }
+.pro-refund p { margin-top: 10px; font-size: 13px; }
+.pro-refund form { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.pro-refund label { flex: 1; min-width: 120px; font-size: 13px; }
+.pro-practice input:not([type=radio]), .pro-practice select, .pro-practice textarea { display: block; width: 100%; margin-top: 6px; padding: 10px 12px; border: 1px solid #dcd5e9; border-radius: 8px; background: white; color: #302a3d; font: inherit; }
+.pro-practice textarea { resize: vertical; }
+.pro-practice button:focus-visible, .pro-practice input:focus-visible, .pro-practice select:focus-visible, .pro-practice textarea:focus-visible, .pro-practice summary:focus-visible { outline: 3px solid #a796e7; outline-offset: 3px; }
+.pro-practice button:disabled { opacity: .5; cursor: not-allowed; }
+.pro-error { padding: 12px; color: #9e3434; background: #fff1ef; border-radius: 8px; }
+.pro-empty { display: grid; justify-items: center; text-align: center; gap: 12px; padding: 42px 20px; background: #faf8fe; border: 1px dashed #d9d1e8; border-radius: 10px; color: #867b98; }
+.pro-ledger { margin: 0; padding-left: 20px; font-size: 14px; }
+.pro-ledger li { padding: 5px 0; }
+.pro-fix-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; border: 0; padding: 0; margin: 6px 0; }
+.pro-fix-options legend { margin-bottom: 10px; font-weight: 600; }
+.pro-fix-options label { display: flex; align-items: start; gap: 9px; border: 1px solid #e2dbea; border-radius: 10px; padding: 15px; font-size: 14px; cursor: pointer; }
+.pro-fix-options input { margin-top: 5px; accent-color: #7453c5; }
+.pro-fix-options .selected { border-color: #9e82da; background: #f5efff; }
+.pro-test-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.pro-test-card { display: grid; align-content: start; gap: 14px; padding: 18px; border: 1px solid #e7e2ed; border-radius: 12px; }
+.pro-test-card h3 { font-size: 15px; min-height: 46px; }
+.pro-test-card button { white-space: normal; text-align: left; }
+.pro-test-pass, .pro-test-fail { padding: 12px; border-radius: 8px; font-size: 13px; }
+.pro-test-pass { color: #29694e; background: #edf8f1; }
+.pro-test-fail { color: #943f39; background: #fff1ec; }
+.pro-test-panel > .mission-primary, .pro-report > .mission-primary { justify-self: start; }
+.pro-report-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.pro-report label { font-size: 14px; font-weight: 600; }
+.pro-report select, .pro-report textarea { font-weight: 400; }
+.pro-result-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 30px; padding: 30px; margin-top: 24px; border-radius: 16px; background: #eee8fc; color: #48346d; }
+.pro-result-hero h2 { font-size: 60px; line-height: 1.2; letter-spacing: -.04em; }
+.pro-result-hero small { font-size: 22px; font-weight: 400; }
+.pro-result-hero p { margin-top: 7px; }
+.pro-consequences { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0; }
+.pro-consequences article { display: grid; gap: 6px; padding: 20px; background: white; border: 1px solid #e6e0ed; border-radius: 12px; }
+.pro-consequences span { font-size: 12px; color: #746b80; }
+.pro-consequences b { font-size: 24px; }
+.pro-findings { display: grid; gap: 12px; }
+.pro-finding { padding: 20px 24px; border: 1px solid #e7e0ed; border-left: 3px solid #d9aa63; border-radius: 10px; background: white; }
+.pro-finding.good { border-left-color: #6fab8d; }
+.pro-finding > div { display: flex; justify-content: space-between; gap: 12px; }
+.pro-finding h3 { display: flex; align-items: center; gap: 6px; font-size: 16px; }
+.pro-finding p { margin-top: 8px; font-size: 14px; }
+.pro-next { color: #75613e; }
+.pro-next-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 12px; }
+.pro-saved-note { margin: 18px 0; padding: 20px; border-left: 3px solid #c3b4df; background: #f8f5fc; overflow-wrap: anywhere; white-space: pre-wrap; }
+.pro-history { padding: 16px 0; margin-top: 16px; border-top: 1px solid #e5dfeb; }
+.pro-history summary svg { display: inline; vertical-align: middle; margin-right: 6px; }
+.pro-history ol, .pro-history ul { padding-left: 22px; margin: 14px 0; font-size: 13px; }
+.pro-history li { padding: 5px; }
+@media (max-width: 760px) {
+  .pro-case-heading { flex-direction: column; }
+  .pro-case-grid, .pro-fix-options, .pro-test-grid, .pro-report-fields, .pro-result-hero, .pro-consequences { grid-template-columns: 1fr; }
+  .pro-step-nav button { padding: 10px 6px; flex-direction: column; font-size: 12px; }
+  .pro-practice .mission-pro-card { padding: 20px; }
+  .pro-test-card h3 { min-height: 0; }
+  .pro-report select { max-width: 100%; font-size: 14px; }
+}
 .mission-action-row {
   display: flex;
   flex-wrap: wrap;

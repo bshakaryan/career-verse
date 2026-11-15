@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import ProCasePractice from "./pro-case-practice";
+import { assessAttempt, newPractice, proCaseKey, readPractice, type ProPractice } from "@/lib/shopflow/pro-case";
 
 const plans = [
   { id: "monthly", title: "Monthly", price: 29, period: "month", detail: "Billed monthly" },
@@ -12,7 +14,7 @@ const planBenefits = [
   "Advanced practice cases",
   "Pro courses",
   "Learning progress tracking",
-  "Specialist feedback on submitted work",
+  "Personal feedback on your decisions",
 ];
 type Plan = (typeof plans)[number]["id"];
 type View = "plans" | "library" | "case" | "courses" | "review";
@@ -28,10 +30,6 @@ const proCourses = [
     summary: "Turn a payment mismatch into a report another tester can verify.",
     lesson: "Record the scenario, steps, expected behavior and actual result. In a payment timeout, distinguish the message on screen from the payment status in the order record. Include both so another tester can repeat your check.",
   },
-];
-const cases = [
-  { label: "Normal connection", result: "Checkout shows Paid. Order record shows Paid." },
-  { label: "Connection drops after payment", result: "Checkout shows Failed. Order record shows Paid." },
 ];
 
 function readFlag(key: string) {
@@ -101,20 +99,23 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
   const access = useProCourseAccess();
   const { plan } = access;
   const [view, setView] = useState<View>("plans");
-  const [checked, setChecked] = useState<string[]>([]);
-  const [decision, setDecision] = useState<"hold" | "release" | null>(null);
-  const [caseDone, setCaseDone] = useState(false);
-  const [work, setWork] = useState("");
-  const [reviewReady, setReviewReady] = useState(false);
+  const [practice, setPractice] = useState<ProPractice>(newPractice);
+  const [practiceReady, setPracticeReady] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const caseDone = !!practice.current.report;
 
   useEffect(() => {
-    setCaseDone(readFlag("careerverse-pro-case") === "done");
-    const savedWork = readFlag("careerverse-pro-review");
-    if (savedWork) {
-      setWork(savedWork);
-      setReviewReady(true);
-    }
+    setPractice(readPractice(readFlag(proCaseKey)));
+    setPracticeReady(true);
   }, []);
+
+  function updatePractice(next: ProPractice) {
+    setPractice(next);
+    try {
+      localStorage.setItem(proCaseKey, JSON.stringify(next));
+      setSaveError(false);
+    } catch { setSaveError(true); }
+  }
 
   function changeView(next: View) {
     setView(next);
@@ -165,8 +166,8 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
           <div className="mission-pro-library">
             <article className="mission-pro-card">
               <h2>QA case · Checkout after a timeout</h2>
-              <p>{caseDone ? "Case completed" : "Compare checkout and order records. Decide whether to release."}</p>
-              <button className="mission-primary" onClick={() => changeView("case")}>{caseDone ? "Review QA case" : "Start QA case"}</button>
+              <p>{caseDone ? `Latest result: ${assessAttempt(practice.current).score}/100` : "Investigate a payment, recover the order and test a fix."}</p>
+              <button className="mission-primary" onClick={() => changeView("case")}>{caseDone ? "Review QA case" : practice.current.actions.length ? "Continue QA case" : "Start QA case"}</button>
             </article>
             <article className="mission-pro-card">
               <h2>Courses</h2>
@@ -174,78 +175,24 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
               <button className="mission-primary" onClick={() => changeView("courses")}>Open courses</button>
             </article>
             <article className="mission-pro-card">
-              <h2>Specialist feedback</h2>
-              <p>Save a report draft and see what a review could cover.</p>
-              <button className="mission-primary" onClick={() => changeView("review")}>Try feedback demo</button>
+              <h2>Your decision review</h2>
+              <p>{caseDone ? "See consequences, missed evidence and your next practice skill." : "Complete the case to get a review based on your actions."}</p>
+              <button className="mission-primary" onClick={() => changeView("review")}>{caseDone ? "Review my decisions" : "Open practice case"}</button>
             </article>
           </div>
         </>
       )}
-      {view === "case" && (
-        <section className="mission-course-detail">
-          <h1>Checkout after a timeout</h1>
-          <p>The release is in an hour. Check that the customer and the order record agree about whether a payment went through.</p>
-          <div className="mission-pro-stack">
-            {cases.map((test) => (
-              <section className="mission-pro-card" key={test.label}>
-                <h2>{test.label}</h2>
-                <button className="mission-secondary" onClick={() => {
-                  if (!checked.includes(test.label)) setChecked([...checked, test.label]);
-                }}>Run {test.label.toLowerCase()} check</button>
-                {checked.includes(test.label) && <p role="status">{test.result}</p>}
-              </section>
-            ))}
-            {checked.length === cases.length && (
-              <>
-                <h2>Would you release this build?</h2>
-                <div className="mission-action-row">
-                  <button className="mission-primary" onClick={() => {
-                    setDecision("hold");
-                    setCaseDone(true);
-                    saveFlag("careerverse-pro-case", "done");
-                  }}>Hold the release</button>
-                  <button className="mission-secondary" onClick={() => setDecision("release")}>Approve release</button>
-                </div>
-                {decision && <p role="status">{decision === "hold"
-                  ? "Case complete. The customer sees a failure even though the order is paid. Report the mismatch before release."
-                  : "Compare the two records in the timeout test. Could the customer think they still need to pay?"}</p>}
-                {decision === "hold" && <button className="mission-primary" onClick={() => changeView("review")}>Draft a report for review</button>}
-              </>
-            )}
-          </div>
-        </section>
+      {(view === "case" || view === "review") && (
+        practiceReady ? <>
+          {saveError && <p role="alert" className="pro-error">Your browser could not save this attempt. Keep this page open to continue.</p>}
+          <ProCasePractice practice={practice} onChange={updatePractice} />
+        </> : <p role="status">Loading your practice…</p>
       )}
       {view === "courses" && (
         <>
           <h1>Pro courses</h1>
           <ProCourseCards access={access} onPricing={() => changeView("plans")} />
         </>
-      )}
-      {view === "review" && (
-        <section className="mission-course-detail">
-          <h1>Specialist feedback demo</h1>
-          <p>Draft a short QA report with the steps, what you expected and what you saw. Your draft stays on this device.</p>
-          <form className="mission-pro-stack" onSubmit={(event) => {
-            event.preventDefault();
-            if (!work.trim()) return;
-            saveFlag("careerverse-pro-review", work.trim());
-            setReviewReady(true);
-          }}>
-            <label>QA report draft
-              <textarea required rows={5} maxLength={1600} value={work} onChange={(event) => {
-                setWork(event.target.value);
-                setReviewReady(false);
-              }} />
-            </label>
-            <button className="mission-primary" type="submit" disabled={!work.trim()}>Save draft and see sample feedback</button>
-          </form>
-          {reviewReady && (
-            <div className="mission-demo-note" role="status">
-              <strong>Draft saved · Example review</strong>
-              <p>State when the connection drops and list both results: the checkout displays Failed while the order record shows Paid. Add the expected message and explain why the mismatch should block release.</p>
-            </div>
-          )}
-        </section>
       )}
     </>
   );

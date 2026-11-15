@@ -1,12 +1,26 @@
-# CareerVerse — One crisis. Two careers.
+# CareerVerse — One workplace. Multiple roles.
 
-A browser workplace simulation for adults exploring a career change. Resolve the same fictional ShopFlow checkout incident first as Customer Support, then as a Junior QA Tester. Your second role inherits your first role's decisions.
+A browser workplace simulation for adults exploring a career change. The current free BUG-104 mission follows Customer Support → Developer → QA → Support. The Pro workspace continues with payment investigation, customer recovery and release decisions.
 
 **Live:** https://careerverse-pm-practice.filanteye.chatgpt.site
 **Source:** https://github.com/bshakaryan/career-verse
 **Pitch:** [English PDF, 10 slides](output/pdf/careerverse-pitch.pdf)
 
-## Shipped scope
+## Current Pro practice
+
+Open Pricing, choose a demo plan and start **Checkout after a timeout**. A failed checkout screen may hide a captured $79 payment or an interrupted $49 request. Inspect the payment record, retry or confirm the order, and enter refunds. The action log computes the resulting charges, refunds, excess payments and unpaid fulfilment exposure.
+
+Choose a timeout recovery policy and test it against normal checkout, interruption before capture and interruption after capture. New fixes invalidate previous test evidence. Submit a structured handoff and release decision to receive an action-based review across recovery (30), investigation (20), regression coverage (25), handoff evidence (15) and release judgment (10).
+
+Blind retries, duplicate charges and premature confirmations remain in the review even after recovery. Retry with a fresh order to compare results, or try the alternate failure. Current actions, report drafts and the last eight completed attempts persist on this browser/origin. The optional handoff note is retained but its writing quality is not scored. No OpenAI key or live model is needed for this case; feedback is computed from recorded actions. All payments, refunds and subscription upgrades are simulated.
+
+Implementation: `src/lib/shopflow/pro-case.ts`, `src/components/pro-case-practice.tsx`. Tests cover incorrect and correct outcomes, repaired mistakes, the alternate failure, regression invalidation, handoff evidence and persistence.
+
+## Earlier ShopFlow implementation reference
+
+The sections below describe the earlier Support → QA simulation engine retained in the repository, not the current BUG-104 and Pro screens. The linked PDF pitch is also from that earlier release.
+
+### Shipped scope of the earlier engine
 
 - A focused Explore page introduces the complete Support → QA experience with one entry button. Guest entry requires no account or payment; English UI uses React and Headless UI.
 - An eight-step guide follows saved progress, opens the next task and explains each form field. Secondary tools and the wider process map are collapsed until needed.
