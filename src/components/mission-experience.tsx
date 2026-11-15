@@ -145,7 +145,6 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
   if (phase === "intro") return (
     <main className="mission-intro">
       <div className="mission-intro-card">
-        <span className="mission-kicker">ONE BUG · THREE ROLES · ONE MISSION</span>
         <h1>A real problem.<br /><em>A real workflow.</em></h1>
         <p>A customer cannot pay for an order. Try three IT roles and help the team solve the problem.</p>
         <div className="mission-role-chain">
@@ -157,7 +156,6 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
         </div>
         <div className="mission-reassurance"><Sparkles size={17} />Don’t worry if you have never worked in IT. We will guide you at every step.</div>
         <button className="mission-primary mission-large" onClick={() => setPhase("support")}>Start Mission <ArrowRight size={18} /></button>
-        <small>No technical experience needed</small>
       </div>
     </main>
   );
@@ -165,7 +163,7 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
   return (
     <main className={`mission-shell phase-${stepFor(phase)}`}>
       <header className="mission-header">
-        <div><span className="mission-kicker">ONE BUG · THREE ROLES · ONE MISSION</span><h1>BUG-104 · Payment button</h1></div>
+        <div><h1>BUG-104 · Payment button</h1></div>
         <Progress phase={phase} />
         <button className="mission-reset" onClick={reset} aria-label="Restart mission"><RefreshCcw size={15} /> Restart</button>
       </header>
@@ -331,7 +329,6 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
               {feedback && <p className="mission-editor-feedback" role="status">{feedback}</p>}
             </article>
             <aside className="dev-ticket">
-              <span className="mission-kicker">BUG-104</span>
               <h3>{ticket.summary}</h3>
               <dl>
                 <div><dt>Status</dt><dd>{phase === "developer" ? "Open" : phase === "fix-applied" && previewPassed ? "Ready for Testing" : "In Progress"}</dd></div>
@@ -396,7 +393,6 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
           </Guidance>
           <div className="qa-grid">
             <aside className="qa-ticket-card">
-              <span className="mission-kicker">BUG-104</span>
               <h3>{ticket.summary}</h3>
               <p>{ticket.evidence}</p>
               <div className="qa-meta"><span>Expected checkout behavior</span><b>{ticket.expected}</b></div>
@@ -427,7 +423,7 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
               </div>
             </article>
             <aside className="test-runner">
-              <span className="mission-kicker">CHECKOUT TESTS</span>
+              <h2 className="mission-test-heading">Checkout tests</h2>
               <ul className="mission-test-list">
                 {requiredTests.map((id) => {
                   const actual = qaResults[id];
@@ -492,7 +488,6 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
             </article>
             <aside className="resolution-status">
               <span className="success-icon"><Check size={24} /></span>
-              <span className="mission-kicker">BUG-104</span>
               <h2>Fixed &amp; Tested</h2>
               <div><Code2 size={17} /><span>Developer<b>Fix completed</b></span><Check size={17} /></div>
               <div><FlaskConical size={17} /><span>QA Tester<b>{qaResults.retry === 1 ? "Normal, double-click and retry tests passed" : "Tests passed"}</b></span><Check size={17} /></div>
@@ -503,7 +498,9 @@ export default function MissionExperience({ onHome, onLearn }: { onHome: () => v
 
       {phase === "complete" && (
         <section className="mission-complete">
-          <span className="complete-mark"><Check size={30} /></span><span className="mission-kicker">MISSION COMPLETE</span><h1>You just experienced how an IT team works.</h1><p>Reply sent to Maya · BUG-104 resolved</p>
+          <span className="complete-mark"><Check size={30} /></span>
+          <h1>You just experienced how an IT team works.</h1>
+          <p>Reply sent to Maya · BUG-104 resolved</p>
           <div className="complete-roles"><article><Headphones size={22} /><h3>Customer Support</h3><p>You helped the customer and sent a clear issue to the team.</p></article><article><Code2 size={22} /><h3>Software Developer</h3><p>You found the right change and fixed the broken button.</p></article><article><FlaskConical size={22} /><h3>QA Tester</h3><p>You tested the fix before it reached the customer.</p></article></div>
           <div className="interest-choice">
             <b>Which role would you like to explore?</b>

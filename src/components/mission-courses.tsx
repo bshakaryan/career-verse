@@ -105,7 +105,6 @@ export default function MissionCourses({ onMission, onPro, initialCourse }: Prop
   }
   return (
     <main className="mission-course-page">
-      <span className="mission-kicker">LEARN</span>
       <h1>Build the skills behind each role.</h1>
       <p className="mission-course-intro">Start with a free lesson or build your skills with Pro courses.</p>
       <section className="mission-catalog-group" aria-labelledby="free-lessons-heading">

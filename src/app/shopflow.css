@@ -2237,19 +2237,6 @@
   display: grid;
   gap: 23px;
 }
-.sf-explore-flow li {
-  display: flex;
-  align-items: flex-start;
-  gap: 18px;
-}
-.sf-explore-flow li > span {
-  color: #7556d8;
-  font-weight: 750;
-  font-size: 14px;
-  border-radius: 10px;
-  background: #eee8fc;
-  padding: 11px;
-}
 .sf-explore-flow h2 {
   font-size: 18px;
   margin: 0 0 6px;

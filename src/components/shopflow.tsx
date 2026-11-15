@@ -2245,21 +2245,18 @@ export default function ShopFlow() {
           </Button>
           <ol className="sf-explore-flow">
             <li>
-              <span>01</span>
               <div>
                 <h2>Help the customer</h2>
                 <p>Create a clear bug ticket for the team.</p>
               </div>
             </li>
             <li>
-              <span>02</span>
               <div>
                 <h2>Fix the code</h2>
                 <p>Choose the change that makes the Pay button work.</p>
               </div>
             </li>
             <li>
-              <span>03</span>
               <div>
                 <h2>Test and resolve</h2>
                 <p>Verify the fix, then tell the customer it is ready.</p>

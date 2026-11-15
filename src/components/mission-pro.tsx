@@ -117,8 +117,7 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
   if (!plan || view === "plans") return (
     <>
       <button className="mission-course-back" onClick={onBack}><ArrowLeft size={15} /> Back to Learn</button>
-      <span className="mission-kicker">CAREERVERSE PRO</span>
-      <h1>Practice beyond your first mission.</h1>
+      <h1>CareerVerse Pro</h1>
       <p className="mission-course-intro">Both plans include advanced cases, courses and progress tracking, and feedback from a specialist on submitted work.</p>
       <p className="mission-demo-note">MVP demo · Plan selection unlocks a preview. No payment is collected. Specialist feedback is shown as an example.</p>
       <div className="mission-plan-grid">
@@ -143,10 +142,10 @@ export default function MissionPro({ onBack }: { onBack: () => void }) {
       <button className="mission-course-back" onClick={() => changeView(view === "library" ? "plans" : "library")}>
         <ArrowLeft size={15} /> {view === "library" ? "Back to Pricing" : "Back to Pro workspace"}
       </button>
-      <span className="mission-kicker">PRO DEMO · {active.title.toUpperCase()} · {active.price}/{active.period}</span>
       {view === "library" && (
         <>
           <h1>Your Pro workspace</h1>
+          <p>{active.title} demo · {active.price}/{active.period}</p>
           <p className="mission-course-intro">Your case and course progress is saved on this device.</p>
           <div className="mission-pro-library">
             <article className="mission-pro-card">
