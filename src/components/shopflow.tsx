@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Dialog,
   DialogBackdrop,
@@ -77,6 +77,7 @@ type App =
   | "inbox"
   | "tasks"
   | "orders"
+  | "tickets"
   | "chat"
   | "sandbox"
   | "docs"
@@ -87,6 +88,7 @@ const apps = [
   { id: "tasks", label: "Task board", icon: ListTodo },
   { id: "chat", label: "Team chat", icon: MessageSquare },
   { id: "orders", label: "Customer orders", icon: ShoppingBag },
+  { id: "tickets", label: "Tickets", icon: Flag },
   { id: "sandbox", label: "Checkout sandbox", icon: FlaskConical },
   { id: "docs", label: "Documents", icon: FileText },
   { id: "timeline", label: "Workday timeline", icon: Clock3 },
@@ -191,7 +193,21 @@ export default function ShopFlow() {
   }
   useEffect(() => {
     const syncScreen = () => {
-      const hash = window.location.hash.slice(1);
+      const [hash, query] = window.location.hash.slice(1).split("?");
+      const params = new URLSearchParams(query);
+      const linkedApp = params.get("app");
+      const linkedOrder = params.get("order");
+      if (hash === "workspace" && apps.some((a) => a.id === linkedApp)) {
+        setApp(linkedApp as App);
+        if (
+          linkedOrder &&
+          (linkedOrder === "manager" ||
+            orders.some((o) => o.id === linkedOrder))
+        ) {
+          setSelectedMessage(linkedOrder);
+          if (linkedOrder !== "manager") setSelectedOrder(linkedOrder);
+        }
+      }
       setScreen(
         ["practice", "careers"].includes(hash)
           ? "pm"
@@ -203,7 +219,6 @@ export default function ShopFlow() {
       );
       setDialog(null);
     };
-    syncScreen();
     window.addEventListener("hashchange", syncScreen);
     try {
       const raw = localStorage.getItem(progressKey);
@@ -232,6 +247,7 @@ export default function ShopFlow() {
         "Saved practice could not be loaded. Your original browser data has been kept. Use another browser for a fresh guest session.",
       );
     }
+    syncScreen();
     setReady(true);
     fetch("/api/shopflow")
       .then((r) => r.json())
@@ -310,8 +326,21 @@ export default function ShopFlow() {
       setBusy(false);
     }
   }
-  function goApp(next: App) {
+  function goApp(next: App, orderId?: string) {
     setApp(next);
+    const targetOrder =
+      orderId ||
+      (next === "inbox"
+        ? selectedMessage
+        : next === "orders"
+          ? selectedOrder
+          : undefined);
+    if (screen === "workspace")
+      window.history.replaceState(
+        null,
+        "",
+        `#workspace?app=${next}${targetOrder ? `&order=${targetOrder}` : ""}`,
+      );
     if (progressRef.current.active && !busyRef.current)
       setDraft("workspaceApp", next);
     setToast("");
@@ -322,7 +351,7 @@ export default function ShopFlow() {
     switch (step.target) {
       case "message":
         setSelectedMessage(step.id!);
-        goApp("inbox");
+        goApp("inbox", step.id);
         await act({ type: "READ_MESSAGE", id: step.id! });
         break;
       case "document":
@@ -332,18 +361,18 @@ export default function ShopFlow() {
         break;
       case "order":
         setSelectedOrder(step.id!);
-        goApp("orders");
+        goApp("orders", step.id);
         await act({ type: "ORDER_INSPECTED", id: step.id! });
         focus = "sf-order-details";
         break;
       case "refund":
         setSelectedOrder(step.id!);
-        goApp("orders");
+        goApp("orders", step.id);
         focus = `refund-${step.id}`;
         break;
       case "reply":
         setSelectedMessage(step.id!);
-        goApp("inbox");
+        goApp("inbox", step.id);
         focus = `reply-${step.id}`;
         break;
       case "escalation": {
@@ -354,11 +383,11 @@ export default function ShopFlow() {
               draft[`link-${o.id}`] === "yes",
           )?.id || state?.inspected[0];
         if (orderId) openEscalation(orderId);
-        else goApp("orders");
+        else goApp("tickets");
         break;
       }
       case "ticket":
-        goApp("tasks");
+        goApp("tickets");
         focus = "sf-qa-ticket";
         break;
       case "test":
@@ -895,8 +924,7 @@ export default function ShopFlow() {
     if (!state?.inspected.includes(orderId)) return;
     setSelectedOrder(orderId);
     if (!state.escalation) setDraft(`link-${orderId}`, "yes");
-    setDraft("escalation-order", orderId);
-    goApp("orders");
+    goApp("tickets");
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         const form = document.getElementById("sf-escalation");
@@ -907,51 +935,25 @@ export default function ShopFlow() {
   }
   function escalationForm() {
     if (!state) return null;
-    if (state.escalation)
-      return (
-        <section
-          className="sf-order-escalation"
-          id="sf-escalation"
-          tabIndex={-1}
-        >
-          <div className="sf-panel-heading">
-            <h3>QA-201 · Ticket created</h3>
-            <button
-              className="sf-text-button"
-              aria-label="Close ticket details"
-              onClick={() => setDraft("escalation-order", "")}
-            >
-              <X size={18} />
-            </button>
-          </div>
-          <Badge tone="green">{state.escalation.priority} priority</Badge>
-          <p>{state.escalation.symptom}</p>
-          <p className="sf-muted">
-            Linked orders: {state.escalation.orderIds.join(", ") || "None"}
-          </p>
-          <p className="sf-muted">
-            This ticket carries forward into your QA investigation.
-          </p>
-        </section>
-      );
     return (
-      <section className="sf-order-escalation" id="sf-escalation" tabIndex={-1}>
+      <section
+        className="sf-panel sf-ticket-panel"
+        id="sf-escalation"
+        tabIndex={-1}
+      >
         <div className="sf-panel-heading">
           <div>
             <span className="sf-kicker">HANDOFF TO QA</span>
             <h3>Escalate the incident</h3>
           </div>
-          <button
-            className="sf-text-button"
-            aria-label="Close ticket form"
-            onClick={() => setDraft("escalation-order", "")}
-          >
-            <X size={18} />
-          </button>
+          <Badge>New ticket</Badge>
         </div>
         <fieldset className="sf-form" disabled={busy}>
           <div className="sf-field">
             <span>Link inspected orders</span>
+            <p className="sf-muted">
+              One ticket can include several orders with the same problem.
+            </p>
             <div className="sf-escalation-orders">
               {orders.map((o) => (
                 <label key={o.id}>
@@ -1024,6 +1026,69 @@ export default function ShopFlow() {
   function workspaceContent() {
     if (!state || !run) return null;
     const supportLocked = state.stage !== "support";
+    if (app === "tickets") {
+      if (state.qaTicket)
+        return (
+          <section
+            className="sf-panel sf-ticket-panel"
+            id="sf-qa-ticket"
+            tabIndex={-1}
+          >
+            <span className="sf-kicker">INCIDENT TICKET · QA-201</span>
+            <h2>{state.qaTicket.title}</h2>
+            <div className="sf-ticket-badges">
+              <Badge>{state.qaTicket.status}</Badge>
+              {state.escalation && (
+                <Badge>{state.escalation.priority} priority</Badge>
+              )}
+            </div>
+            <p>{state.qaTicket.body}</p>
+            <p className="sf-muted">
+              Linked orders:{" "}
+              {state.qaTicket.orderIds.join(", ") ||
+                "None — investigate the orders yourself"}
+            </p>
+            {state.impact.qaDelay > 0 && (
+              <div className="sf-notice amber">
+                No support escalation. QA started with a {state.impact.qaDelay}
+                -minute delay.
+              </div>
+            )}
+            {state.stage === "qa" && (
+              <Button
+                disabled={busy}
+                onClick={() => {
+                  setDraft("qa-ticket-reviewed", "yes");
+                  if (!state.docs.includes("bugs")) {
+                    setSelectedDoc("bugs");
+                    goApp("docs");
+                  } else goApp("sandbox");
+                }}
+              >
+                {draft["qa-ticket-reviewed"] === "yes"
+                  ? "Continue the investigation"
+                  : "I’ve reviewed the ticket"}
+                <ArrowRight size={16} />
+              </Button>
+            )}
+            <Button secondary onClick={() => goApp("orders")}>
+              Back to customer orders
+            </Button>
+          </section>
+        );
+      return (
+        <>
+          <p className="sf-muted">
+            Create a ticket for QA from the orders you’ve inspected. Your draft
+            is saved as you type.
+          </p>
+          {escalationForm()}
+          <Button secondary onClick={() => goApp("orders")}>
+            Back to customer orders
+          </Button>
+        </>
+      );
+    }
     if (app === "inbox") {
       const o = orders.find((o) => o.id === selectedMessage);
       return (
@@ -1055,6 +1120,7 @@ export default function ShopFlow() {
                 key={m.id}
                 onClick={async () => {
                   setSelectedMessage(m.id);
+                  goApp("inbox", m.id);
                   await act({ type: "READ_MESSAGE", id: m.id });
                 }}
               >
@@ -1177,6 +1243,7 @@ export default function ShopFlow() {
               <Button
                 onClick={() => {
                   setSelectedMessage(orders[0].id);
+                  goApp("inbox", orders[0].id);
                   act({ type: "READ_MESSAGE", id: orders[0].id });
                 }}
               >
@@ -1196,7 +1263,8 @@ export default function ShopFlow() {
               <div>
                 <h2>Customer orders</h2>
                 <p className="sf-muted">
-                  Three fictional orders. Check the details before you act.
+                  Click an order ID to open its customer message. Inspect the
+                  order before making a decision.
                 </p>
               </div>
               <Badge>USD · no tax or shipping</Badge>
@@ -1217,83 +1285,100 @@ export default function ShopFlow() {
                 </thead>
                 <tbody>
                   {orders.map((order) => (
-                    <Fragment key={order.id}>
-                      <tr
-                        className={order.id === selectedOrder ? "selected" : ""}
-                      >
-                        <td>
-                          <b>{order.id}</b>
-                        </td>
-                        <td>{order.customer}</td>
-                        <td>{money(order.cart.subtotal)}</td>
-                        <td>{order.cart.promo}</td>
-                        <td>{money(actualTotal(order.cart))}</td>
-                        <td>
-                          {state.refunds[order.id] === undefined
-                            ? "Not decided"
-                            : money(state.refunds[order.id])}
-                        </td>
-                        <td>
+                    <tr
+                      key={order.id}
+                      className={order.id === selectedOrder ? "selected" : ""}
+                    >
+                      <td>
+                        <a
+                          className="sf-record-link"
+                          href={`#workspace?app=inbox&order=${order.id}`}
+                          aria-label={`${order.id} · Open customer message`}
+                          onClick={(event) => {
+                            if (
+                              event.metaKey ||
+                              event.ctrlKey ||
+                              event.shiftKey ||
+                              event.altKey
+                            )
+                              return;
+                            event.preventDefault();
+                            setSelectedMessage(order.id);
+                            goApp("inbox", order.id);
+                            void act({ type: "READ_MESSAGE", id: order.id });
+                          }}
+                        >
+                          <Mail size={14} />
+                          {order.id}
+                          <ArrowUpRight size={13} />
+                        </a>
+                      </td>
+                      <td>{order.customer}</td>
+                      <td>{money(order.cart.subtotal)}</td>
+                      <td>{order.cart.promo}</td>
+                      <td>{money(actualTotal(order.cart))}</td>
+                      <td>
+                        {state.refunds[order.id] === undefined
+                          ? "Not decided"
+                          : money(state.refunds[order.id])}
+                      </td>
+                      <td>
+                        <button
+                          className="sf-text-button"
+                          disabled={busy}
+                          onClick={async () => {
+                            setSelectedOrder(order.id);
+                            await act({
+                              type: "ORDER_INSPECTED",
+                              id: order.id,
+                            });
+                          }}
+                        >
+                          Inspect
+                        </button>
+                      </td>
+                      <td>
+                        {state.escalation ? (
+                          state.escalation.orderIds.includes(order.id) ? (
+                            <a
+                              className="sf-record-link"
+                              href="#workspace?app=tickets"
+                              onClick={(event) => {
+                                if (
+                                  event.metaKey ||
+                                  event.ctrlKey ||
+                                  event.shiftKey ||
+                                  event.altKey
+                                )
+                                  return;
+                                event.preventDefault();
+                                goApp("tickets");
+                              }}
+                            >
+                              QA-201 <ArrowUpRight size={13} />
+                            </a>
+                          ) : (
+                            <span className="sf-muted">Not linked</span>
+                          )
+                        ) : supportLocked ? (
+                          <span className="sf-muted">Handoff closed</span>
+                        ) : (
                           <button
                             className="sf-text-button"
-                            disabled={busy}
-                            onClick={async () => {
-                              setSelectedOrder(order.id);
-                              await act({
-                                type: "ORDER_INSPECTED",
-                                id: order.id,
-                              });
-                            }}
+                            disabled={
+                              busy || !state.inspected.includes(order.id)
+                            }
+                            aria-label={`Escalate ${order.id}`}
+                            onClick={() => openEscalation(order.id)}
                           >
-                            Inspect
+                            <Flag size={14} />{" "}
+                            {state.inspected.includes(order.id)
+                              ? "Create ticket"
+                              : "Inspect first"}
                           </button>
-                        </td>
-                        <td>
-                          {state.escalation ? (
-                            state.escalation.orderIds.includes(order.id) ? (
-                              <button
-                                className="sf-text-button"
-                                onClick={() => openEscalation(order.id)}
-                              >
-                                QA-201 · View ticket
-                              </button>
-                            ) : (
-                              <span className="sf-muted">Not linked</span>
-                            )
-                          ) : supportLocked ? (
-                            <span className="sf-muted">Handoff closed</span>
-                          ) : (
-                            <button
-                              className="sf-text-button"
-                              disabled={
-                                busy || !state.inspected.includes(order.id)
-                              }
-                              aria-label={`Escalate ${order.id}`}
-                              aria-expanded={
-                                draft["escalation-order"] === order.id
-                              }
-                              aria-controls={
-                                draft["escalation-order"] === order.id
-                                  ? "sf-escalation"
-                                  : undefined
-                              }
-                              onClick={() => openEscalation(order.id)}
-                            >
-                              <Flag size={14} />{" "}
-                              {state.inspected.includes(order.id)
-                                ? "Escalate"
-                                : "Inspect first"}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                      {draft["escalation-order"] === order.id &&
-                        (state.escalation || !supportLocked) && (
-                          <tr className="sf-escalation-row">
-                            <td colSpan={8}>{escalationForm()}</td>
-                          </tr>
                         )}
-                    </Fragment>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -1351,7 +1436,7 @@ export default function ShopFlow() {
                   secondary
                   onClick={() => {
                     setSelectedMessage(o.id);
-                    goApp("inbox");
+                    goApp("inbox", o.id);
                   }}
                 >
                   Reply to customer <ArrowRight size={16} />
@@ -1541,17 +1626,15 @@ export default function ShopFlow() {
                             t.id.startsWith("QA")
                               ? "sandbox"
                               : t.id === "CS-103"
-                                ? state.escalation || supportLocked
-                                  ? "timeline"
-                                  : "orders"
+                                ? "tickets"
                                 : "orders",
                           )
                         }
                       >
                         {t.id === "CS-103"
-                          ? state.escalation || supportLocked
-                            ? "Review handoff history"
-                            : "Escalate from customer orders"
+                          ? state.qaTicket
+                            ? "View ticket"
+                            : "Create ticket"
                           : "Open work"}
                         <ArrowRight size={14} />
                       </button>
@@ -1560,38 +1643,6 @@ export default function ShopFlow() {
               </section>
             ))}
           </div>
-          {state.qaTicket && state.stage !== "support" && (
-            <section className="sf-panel" id="sf-qa-ticket" tabIndex={-1}>
-              <h3>QA-201 · inherited evidence</h3>
-              <p>{state.qaTicket.body}</p>
-              <p className="sf-muted">
-                Linked orders:{" "}
-                {state.qaTicket.orderIds.join(", ") ||
-                  "None — investigate the orders yourself"}
-              </p>
-              {state.impact.qaDelay > 0 && (
-                <div className="sf-notice amber">
-                  No support escalation. QA started with a{" "}
-                  {state.impact.qaDelay}-minute delay.
-                </div>
-              )}
-              <Button
-                disabled={busy}
-                onClick={() => {
-                  setDraft("qa-ticket-reviewed", "yes");
-                  if (!state.docs.includes("bugs")) {
-                    setSelectedDoc("bugs");
-                    goApp("docs");
-                  } else goApp("sandbox");
-                }}
-              >
-                {draft["qa-ticket-reviewed"] === "yes"
-                  ? "Continue the investigation"
-                  : "I’ve reviewed the ticket"}
-                <ArrowRight size={16} />
-              </Button>
-            </section>
-          )}
         </>
       );
     }
@@ -2149,10 +2200,10 @@ export default function ShopFlow() {
               {apps
                 .filter((a) =>
                   (state.stage === "support"
-                    ? ["inbox", "orders", "docs", "tasks"]
+                    ? ["inbox", "orders", "tickets", "docs", "tasks"]
                     : state.stage === "qa"
-                      ? ["tasks", "sandbox", "docs", "report"]
-                      : ["report", "sandbox"]
+                      ? ["tasks", "tickets", "sandbox", "docs", "report"]
+                      : ["report", "tickets", "sandbox"]
                   ).includes(a.id),
                 )
                 .map((a) => (
@@ -2173,10 +2224,10 @@ export default function ShopFlow() {
                     (a) =>
                       !(
                         state.stage === "support"
-                          ? ["inbox", "orders", "docs", "tasks"]
+                          ? ["inbox", "orders", "tickets", "docs", "tasks"]
                           : state.stage === "qa"
-                            ? ["tasks", "sandbox", "docs", "report"]
-                            : ["report", "sandbox"]
+                            ? ["tasks", "tickets", "sandbox", "docs", "report"]
+                            : ["report", "tickets", "sandbox"]
                       ).includes(a.id),
                   )
                   .map((a) => (

@@ -94,7 +94,7 @@ The current guard permits 12 AI requests per IP per 10 minutes **per running iso
 1. On Explore, click **Try the full experience**, read the incident brief and start Support.
 2. In Inbox, read the manager message and each complaint. Read promotion/refund policies in Documents.
 3. Inspect all three orders. Record refunds of $20, $12 and $0. Reply with the order ID, amount to two decimals, explanation and next step.
-4. In Customer orders, click Escalate beside SF-1042. The row opens a ticket with that order preselected; link SF-1043, describe the symptom and choose High priority. The created QA-201 ticket stays accessible from linked orders.
+4. In Customer orders, click Create ticket beside SF-1042. Tickets opens with that order preselected; link SF-1043, describe the symptom and choose High priority. QA-201 links in the table open the saved ticket. Each highlighted order ID opens its customer message in Inbox.
 5. Follow **Continue as QA**. Inspect and acknowledge the inherited QA ticket, then read the bug-report standard.
 6. Test $100 mixed + SAVE20 (charged $100), then $100 apparel + SAVE20 (charged $80).
 7. Submit a report with a specific title, preconditions, three explicit steps mentioning SAVE20 and accessories/mixed carts, expected $80, actual $100, High severity, accessories condition and the failing test.

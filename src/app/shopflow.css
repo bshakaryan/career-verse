@@ -967,19 +967,16 @@
 .sf-table-scroll {
   overflow: auto;
 }
-.sf-order-escalation {
+.sf-ticket-panel {
   white-space: normal;
-  width: min(680px, calc(100vw - 88px));
+  width: 100%;
   max-width: 680px;
   padding: 20px;
   border: 1px solid #ded5f6;
   border-radius: 12px;
   background: #faf8ff;
 }
-.sf-app .sf-escalation-row > td {
-  padding: 8px 12px 20px;
-}
-.sf-order-escalation .sf-panel-heading {
+.sf-ticket-panel .sf-panel-heading {
   margin-bottom: 16px;
 }
 .sf-escalation-orders {
@@ -1010,7 +1007,7 @@
   display: grid;
   gap: 4px;
 }
-.sf-order-escalation > p {
+.sf-ticket-panel > p {
   margin-top: 12px;
   overflow-wrap: anywhere;
 }
@@ -2570,4 +2567,30 @@
   .sf-learning-tabs > button[aria-pressed="true"] {
     padding: 16px;
   }
+}
+
+.sf-record-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--sf-purple);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.sf-record-link:hover {
+  color: #4935ae;
+}
+.sf-record-link:focus-visible {
+  outline: 2px solid var(--sf-purple);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.sf-ticket-badges {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.sf-ticket-panel > .sf-button {
+  margin: 16px 12px 0 0;
 }
